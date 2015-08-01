@@ -37,7 +37,6 @@ def test_levenshtein_distances(database, table):
         total = 0
         for n in range(1, len(rows)):
             p = distances[i]  # i'th p == p_m
-            total = 
 
 
     threads = []
