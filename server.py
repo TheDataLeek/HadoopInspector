@@ -18,8 +18,11 @@ cursor = connection.cursor()
 
 @app.route('/')
 def root():
-
-    return {}
+    cursor.execute('SELECT')
+    content = render_template('index.html',
+                name='Hadoop QA',
+                dbs=)
+    return content
 
 
 #@app.route('/api')
@@ -28,4 +31,5 @@ def root():
 
 if __name__ == '__main__':
     app.run(host='localhost',
-            port=config['port'])
+            port=config['port'],
+            debug=True)
