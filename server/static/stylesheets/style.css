@@ -1,0 +1,21 @@
+body {
+   background-image: url("/static/img/footer_lodyas.png");
+   background-repeat: repeat-x;
+}
+
+table {
+    border: 1px solid black;
+}
+
+td {
+    width: 100px;
+    height: 100px;
+}
+
+.page {
+    background: #FFFFFF;
+    margin: auto;
+    width: 80%;
+    border: 3px solid black;
+    padding: 10px;
+}
