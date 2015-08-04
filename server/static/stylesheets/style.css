@@ -12,10 +12,31 @@ td {
     height: 100px;
 }
 
+.header {
+    text-align: center;
+    width: 90%;
+    background: #FFFFFF;
+    margin: auto;
+    padding: 10px;
+}
+
 .page {
     background: #FFFFFF;
     margin: auto;
-    width: 80%;
+    width: 90%;
     border: 3px solid black;
     padding: 10px;
+}
+
+.page h1 {
+    text-align: center;
+}
+
+.page table tr {
+    display: inline;
+    float: none;
+}
+
+.page td {
+    width: 15%;
 }
