@@ -71,11 +71,13 @@ def query(q, args=None):
     res = cursor.fetchall()
     return res
 
+#TODO: Clean up aggregation code and bin
 @app.route('/')
 def root():
     instances = [t[0] for t in query('SELECT DISTINCT instance_name FROM records')]
-    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=?', (instance,))[0][0] for instance in instances]
+
     # TODO: clean up this MAGIC
+    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=?', (instance,))[0][0] for instance in instances]
     rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
                         [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=?', (instance,)) for instance in instances]]
     rimages = [gen_image(history) for history in rule_history]
@@ -92,13 +94,18 @@ def root():
 @app.route('/inspect/<instance>')
 def instance(instance):
     dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records WHERE instance_name=?', (instance,))]
-    # TODO: REPLACE CHUNK
-    rules = [get_number() for _ in dbs]
-    checks = [get_number() for _ in dbs]
-    rimages = [gen_image() for _ in rules]
-    cimages = [gen_image() for _ in checks]
+
+    # TODO: clean up this MAGIC
+    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=? AND database_name=?', (instance, database))[0][0] for database in dbs]
+    rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
+                        [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=?', (instance, database)) for database in dbs]]
+    rimages = [gen_image(history) for history in rule_history]
+    checks = [query('SELECT SUM(run_check_anomaly_score) FROM records WHERE instance_name=? AND database_name=?', (instance, database))[0][0] for database in dbs]
+    check_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
+                        [query('SELECT run_check_anomaly_score, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=?', (instance, database)) for database in dbs]]
+    cimages = [gen_image(history) for history in check_history]
+
     table = [[dbs[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(dbs))]
-    ###
 
     content = render_template('tabular.html',
                               name=instance,
@@ -109,13 +116,18 @@ def instance(instance):
 @app.route('/inspect/<instance>/<database>')
 def database(instance, database):
     tables = [t[0] for t in query('SELECT DISTINCT table_name FROM records WHERE database_name=? AND instance_name=?', (database, instance))]
-    # TODO: Replace CHUNK
-    rules = [get_number() for _ in tables]
-    checks = [get_number() for _ in tables]
-    rimages = [gen_image() for _ in rules]
-    cimages = [gen_image() for _ in checks]
+
+    # TODO: clean up this MAGIC
+    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table))[0][0] for table in tables]
+    rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
+                        [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table)) for table in tables]]
+    rimages = [gen_image(history) for history in rule_history]
+    checks = [query('SELECT SUM(run_check_anomaly_score) FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table))[0][0] for table in tables]
+    check_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
+                        [query('SELECT run_check_anomaly_score, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table)) for table in tables]]
+    cimages = [gen_image(history) for history in check_history]
+
     table = [[tables[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(tables))]
-    ###
 
     content = render_template('tabular.html',
                               name=database,
