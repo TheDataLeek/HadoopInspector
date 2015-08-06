@@ -45,13 +45,14 @@ def setupdb():
             'run_check_unit':'STRING',
             'run_check_severity_score':'INTEGER',
             'run_check_validated':'STRING'}
-    sql_cols = ', '.join(['{} {}'.format(key, item) for key, item in cols.items()])
+    keys = cols.keys()    # Sets the order
+    sql_cols = ', '.join(['{} {}'.format(key, cols[key]) for key in keys])
     cursor.execute('CREATE TABLE records({})'.format(sql_cols))
     with open('/tmp/inspector_demo.csv') as f:
         dr = csv.DictReader(f)
-        to_db = [tuple(i[k] for k in cols.keys()) for i in dr]
+        to_db = [tuple(i[k] for k in keys) for i in dr]
     query = 'INSERT INTO records({}) VALUES ({});'.format(
-                    ','.join(cols.keys()), ','.join(['?' for _ in cols.keys()]))
+                    ','.join(keys), ','.join(['?' for _ in keys]))
     cursor.executemany(query, to_db)
     connection.commit()
     connection.close()
