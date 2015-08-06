@@ -13,7 +13,6 @@ import mpld3
 app = Flask(__name__)
 config = json.loads(open('../config/config.json').read())
 
-
 def main():
     setupdb()
     app.run(host='localhost',
@@ -24,7 +23,7 @@ def main():
 def setupdb():
     connection = sqlite3.connect(config["db"])
     cursor = connection.cursor()
-
+    cursor.execute('DROP TABLE IF EXISTS records')
     cols = {'instance_name':'STRING',
             'database_name':'STRING',
             'table_name':'STRING',
@@ -51,15 +50,35 @@ def setupdb():
     with open('/tmp/inspector_demo.csv') as f:
         dr = csv.DictReader(f)
         to_db = [tuple(i[k] for k in cols.keys()) for i in dr]
-    query = 'INSERT INTO records({}) VALUES ({});'.format(','.join(cols.keys()),
+    query = 'INSERT INTO records({}) VALUES ({});'.format(
+                    ','.join(cols.keys()), ','.join(['?' for _ in cols.keys()]))
     cursor.executemany(query, to_db)
     connection.commit()
+    connection.close()
 
+
+def query(q):
+    connection = sqlite3.connect(config["db"])
+    cursor = connection.cursor()
+    cursor.execute(q)
+    res = cursor.fetchall()
+    return res
 
 @app.route('/')
 def root():
+    instances = [t[0] for t in query('SELECT DISTINCT instance_name FROM records')]
+    rules = [get_number() for _ in instances]
+    checks = [get_number() for _ in instances]
+    rimages = [gen_image() for _ in rules]
+    cimages = [gen_image() for _ in checks]
+    table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
+    content = render_template('index.html', name='Hadoop QA', table=table)
+    return content
+
+@app.route('/<instance>')
+def instance(instance):
     # TODO: REPLACE CHUNK
-    dbs, tables = gen_tables()
+    dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records')]
     rules = [get_number() for _ in dbs]
     checks = [get_number() for _ in dbs]
     rimages = [gen_image() for _ in rules]
@@ -73,8 +92,8 @@ def root():
     return content
 
 
-@app.route('/<database>')
-def database(database):
+@app.route('/<instance>/<database>')
+def database(instance, database):
     # TODO: Replace CHUNK
     dbs, tables = gen_tables()
     rules = [get_number() for _ in tables]
@@ -90,8 +109,8 @@ def database(database):
     return content
 
 
-@app.route('/<database>/<table>')
-def table(database, table):
+@app.route('/<instance>/<database>/<table>')
+def table(instance, database, table):
     return str("TODO")
 
 
