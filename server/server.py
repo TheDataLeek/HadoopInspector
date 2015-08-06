@@ -2,6 +2,7 @@
 
 import sys
 import json
+import datetime
 import random
 import sqlite3
 import csv
@@ -57,30 +58,40 @@ def setupdb():
     connection.commit()
     connection.close()
 
+def strtotime(s):
+    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
 
-def query(q):
-    #TODO: Get sanitized inputs
+def query(q, args=None):
     connection = sqlite3.connect(config["db"])
     cursor = connection.cursor()
-    cursor.execute(q)
+    if args:
+        cursor.execute(q, args)
+    else:
+        cursor.execute(q)
     res = cursor.fetchall()
     return res
 
 @app.route('/')
 def root():
     instances = [t[0] for t in query('SELECT DISTINCT instance_name FROM records')]
-    # TODO: REPLACE CHUNK
-    rules = [get_number() for _ in instances]
-    checks = [get_number() for _ in instances]
-    rimages = [gen_image() for _ in rules]
-    cimages = [gen_image() for _ in checks]
+    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=?', (instance,))[0][0] for instance in instances]
+    # TODO: clean up this MAGIC
+    rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
+                        [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=?', (instance,)) for instance in instances]]
+    rimages = [gen_image(history) for history in rule_history]
+    checks = [query('SELECT SUM(run_check_anomaly_score) FROM records WHERE instance_name=?', (instance,))[0][0] for instance in instances]
+    check_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
+                        [query('SELECT run_check_anomaly_score, run_check_end_timestamp FROM records WHERE instance_name=?', (instance,)) for instance in instances]]
+    cimages = [gen_image(history) for history in check_history]
+
     table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
+
     content = render_template('index.html', name='Hadoop QA', table=table)
     return content
 
 @app.route('/inspect/<instance>')
 def instance(instance):
-    dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records WHERE instance_name="{}"'.format(instance))]
+    dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records WHERE instance_name=?', (instance,))]
     # TODO: REPLACE CHUNK
     rules = [get_number() for _ in dbs]
     checks = [get_number() for _ in dbs]
@@ -97,7 +108,7 @@ def instance(instance):
 
 @app.route('/inspect/<instance>/<database>')
 def database(instance, database):
-    tables = [t[0] for t in query('SELECT DISTINCT table_name FROM records WHERE database_name="{}" AND instance_name="{}"'.format(database, instance))]
+    tables = [t[0] for t in query('SELECT DISTINCT table_name FROM records WHERE database_name=? AND instance_name=?', (database, instance))]
     # TODO: Replace CHUNK
     rules = [get_number() for _ in tables]
     checks = [get_number() for _ in tables]
@@ -134,10 +145,11 @@ def gen_tables():
     return dbs, tables
 
 
-def gen_image():
+def gen_image(points):
+    # Assumes equal point spacing
     fig = plt.figure(figsize=(5, 1))
     ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-    ax.plot(get_numbers(100))
+    ax.plot(points)
     return Markup(mpld3.fig_to_html(fig))
 
 
