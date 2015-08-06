@@ -184,6 +184,7 @@ def create_test_file(dirname):
                   'run_check_severity_score', 'run_check_validated')
 
     outfile = open(pjoin(dirname, 'inspector_demo.csv'), 'w')
+    outfile.write(','.join(fieldnames) + '\n')
     writer  = csv.DictWriter(outfile, fieldnames)
     # Establish instance name
     # Establish database name
