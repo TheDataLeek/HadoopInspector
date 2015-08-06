@@ -1,5 +1,44 @@
 #!/usr/bin/env python2
-""" Generate demo test-results data. 
+""" Generate demo test-results data.
+
+    This program is used to create fake results from daily runs against a
+    hypothetical user database called "Westwind".  This hypothetical
+    database has the following tables within it:
+       - cust_type - a small, non-partitioned lookup table with 5 rows
+       - asset_type - a small, non-partitioned lookup table with 5 rows
+       - cust_asset_events - a large, partitioned fact table
+
+    There are three tests for the two lookup tables, and six for the large
+    fact table that run daily.  The program generates one run for every day
+    from 2015-01-01 to 2015-12-31.  A small random number of tests will find
+    violations.
+
+    This results data will be written by default to /tmp/inspector_demo.csv.
+    4380 records will be written to this comma-delimited csv file without
+    any quotes.  The fields are in the following order:
+        - instance_name             STRING    (always 'prod')
+        - database_name             STRING    (always 'westwind')
+        - table_name                STRING
+        - table_partitioned         INTEGER   (1=True, 0=False)
+        - run_start_timestamp       TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+        - run_mode                  STRING    ('full' or 'incremental')
+        - partition_key             STRING    ('' or 'date_id')
+        - partition_value           STRING    (5-digit julian date for partitioned tables)
+        - check_name                STRING
+        - check_policy_type         STRING    ('quality' or 'data-management')
+        - check_type                STRING    ('rule')
+        - run_check_start_timestamp TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+        - run_check_end_timestamp   TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+        - run_check_mode            STRING    ('full' or 'incremental')
+        - run_check_rc              INTEGER   (always 0)
+        - run_check_violation_cnt   INTEGER
+        - run_check_anomaly_score   INTEGER   (always 0)
+        - run_check_scope           INTEGER   (0-100)
+        - run_check_unit            STRING    ('tables' or 'rows')
+        - run_check_severity_score  INTEGER   (0-100)
+        - run_check_validated       STRING    (always '')
+
+
 """
 from __future__ import division
 import os, sys
@@ -128,7 +167,8 @@ user_tables = \
 
 def main():
     args = get_args()
-    create_test_file(dirname='/tmp')
+    create_test_file(dirname=args.target_dir)
+    print('Demo file created in dir: %s' % args.target_dir)
 
 
 
@@ -151,12 +191,12 @@ def create_test_file(dirname):
     curr_datetime = None
     for month_of_year in range(1,13):
         for day_of_month in range(1, get_month_days(month_of_year)+1):
-            print('2015-%-2.2d-%-2.2d' % (month_of_year, day_of_month))
+            #print('2015-%-2.2d-%-2.2d' % (month_of_year, day_of_month))
             run_start_datetime   = get_run_start_datetime(2015, month_of_year, day_of_month)
             for table_name in user_tables:
-                print('    table_name: %s' % table_name)
+                #print('    table_name: %s' % table_name)
                 for check_name in user_tables[table_name]['checks']:
-                    print('        check_name: %s' % check_name)
+                    #print('        check_name: %s' % check_name)
                     curr_datetime                         = get_curr_datetime(curr_datetime, run_start_datetime)
                     row_dict = {}
                     row_dict['instance_name']             = get_instance_name()
@@ -210,6 +250,7 @@ def get_violation_cnt(table_name, check_name):
     else:
         return 0
 
+
 def get_partition_value(run_mode, curr_datetime):
     if run_mode is None:
         return None
@@ -239,8 +280,10 @@ def convert_severity(in_val):
         sys.exit(1)
 
 
-
 def get_scope(partition_key, avg_row_cnt, violation_unit, violation_cnt):
+    """ Returns the scope of the violations.
+        Range is 0 to 100 - 100 being the greatest scope
+    """
     if not violation_cnt:
         return 0
     elif violation_unit == 'tables':
@@ -254,16 +297,15 @@ def get_scope(partition_key, avg_row_cnt, violation_unit, violation_cnt):
             return (violation_cnt / avg_row_cnt)
 
 
-
 def get_severity_score(default_severity_score, scope):
+    """ Returns the severity of the violations.
+        Range is 0 to 100 - 100 being the most severe.
+    """
     severity_score = (scope * default_severity_score) / 100
     if severity_score == 0:
         return 0
     else:
         return int(max(1, min(100, severity_score)))
-
-
-
 
 
 def get_partition_key(raw_partition_key):
@@ -272,11 +314,14 @@ def get_partition_key(raw_partition_key):
     else:
         return raw_partition_key
 
+
 def get_instance_name():
     return 'prod'
 
+
 def get_database_name():
     return 'westwind'
+
 
 def get_table_partitioned(partition_key):
     if partition_key is not None and partition_key != '':
@@ -301,6 +346,7 @@ def get_curr_datetime(curr_datetime, run_start_datetime):
     else:
         return curr_datetime + datetime.timedelta(seconds=1)
 
+
 def get_month_days(month_of_year):
     if month_of_year in (1,3,5,7,8,10,12):
         return 31
@@ -309,11 +355,10 @@ def get_month_days(month_of_year):
     else:
         return 30
 
-def get_run_violation_cnt():
-    return 0
 
 def get_check_policy_type(raw_check_policy_type):
     return raw_check_policy_type
+
 
 def get_check_type(raw_check_type):
     return raw_check_type
@@ -322,20 +367,28 @@ def get_check_type(raw_check_type):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Gets information about directory')
+    parser = argparse.ArgumentParser(description='Generates demo data')
     parser.add_argument('--version',
                         action='version',
                         version=__version__,
                         help='displays version number')
     parser.add_argument('--long-help',
+                        action='store_true',
                         help='Provides more verbose help')
+    parser.add_argument('--target-dir',
+                        default='/tmp',
+                        help='Specifies the directory the demo data will be written to.  Default is \tmp')
 
     args = parser.parse_args()
     if args.long_help:
         print(__doc__)
         sys.exit(0)
 
-    return vars(args)
+    if not isdir(args.target_dir):
+        print('Invalid target_dir: %s' % args.target_dir)
+        raise ValueError, 'Invalid target_dir'
+
+    return args
 
 
 if __name__ == '__main__':
