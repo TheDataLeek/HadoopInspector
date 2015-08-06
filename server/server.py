@@ -59,6 +59,7 @@ def setupdb():
 
 
 def query(q):
+    #TODO: Get sanitized inputs
     connection = sqlite3.connect(config["db"])
     cursor = connection.cursor()
     cursor.execute(q)
@@ -68,6 +69,7 @@ def query(q):
 @app.route('/')
 def root():
     instances = [t[0] for t in query('SELECT DISTINCT instance_name FROM records')]
+    # TODO: REPLACE CHUNK
     rules = [get_number() for _ in instances]
     checks = [get_number() for _ in instances]
     rimages = [gen_image() for _ in rules]
@@ -76,10 +78,10 @@ def root():
     content = render_template('index.html', name='Hadoop QA', table=table)
     return content
 
-@app.route('/<instance>')
+@app.route('/inspect/<instance>')
 def instance(instance):
+    dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records WHERE instance_name="{}"'.format(instance))]
     # TODO: REPLACE CHUNK
-    dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records')]
     rules = [get_number() for _ in dbs]
     checks = [get_number() for _ in dbs]
     rimages = [gen_image() for _ in rules]
@@ -87,16 +89,16 @@ def instance(instance):
     table = [[dbs[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(dbs))]
     ###
 
-    content = render_template('index.html',
-                              name='Hadoop QA',
+    content = render_template('tabular.html',
+                              name=instance,
                               table=table)
     return content
 
 
-@app.route('/<instance>/<database>')
+@app.route('/inspect/<instance>/<database>')
 def database(instance, database):
+    tables = [t[0] for t in query('SELECT DISTINCT table_name FROM records WHERE database_name="{}" AND instance_name="{}"'.format(database, instance))]
     # TODO: Replace CHUNK
-    dbs, tables = gen_tables()
     rules = [get_number() for _ in tables]
     checks = [get_number() for _ in tables]
     rimages = [gen_image() for _ in rules]
@@ -104,13 +106,13 @@ def database(instance, database):
     table = [[tables[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(tables))]
     ###
 
-    content = render_template('database.html',
+    content = render_template('tabular.html',
                               name=database,
                               table=table)
     return content
 
 
-@app.route('/<instance>/<database>/<table>')
+@app.route('/inspect/<instance>/<database>/<table>')
 def table(instance, database, table):
     return str("TODO")
 
