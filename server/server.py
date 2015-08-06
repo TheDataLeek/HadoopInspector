@@ -4,8 +4,6 @@ import sys
 import json
 import pandas
 import datetime
-import sqlite3
-import csv
 from flask import Flask, render_template, Markup
 import matplotlib.pyplot as plt
 import mpld3
@@ -14,57 +12,21 @@ import mpld3
 app = Flask(__name__)
 config = json.loads(open('../config/config.json').read())
 
+data = pandas.read_csv('/tmp/inspector_demo.csv')
+
 def main():
-    setupdb()
     app.run(host='localhost',
             port=config['port'],
             debug=True)
 
 
-def setupdb():
-    connection = sqlite3.connect(config["db"])
-    cursor = connection.cursor()
-    cursor.execute('DROP TABLE IF EXISTS records')
-    cols = {'instance_name':'STRING',
-            'database_name':'STRING',
-            'table_name':'STRING',
-            'table_partitioned':'INTEGER',
-            'run_start_timestamp':'STRING',
-            'run_mode':'STRING',
-            'partition_key':'STRING',
-            'partition_value':'STRING',
-            'check_name':'STRING',
-            'check_policy_type':'STRING',
-            'check_type':'STRING',
-            'run_check_start_timestamp':'STRING',
-            'run_check_end_timestamp':'STRING',
-            'run_check_mode':'STRING',
-            'run_check_rc':'INTEGER',
-            'run_check_violation_cnt':'INTEGER',
-            'run_check_anomaly_score':'INTEGER',
-            'run_check_scope':'INTEGER',
-            'run_check_unit':'STRING',
-            'run_check_severity_score':'INTEGER',
-            'run_check_validated':'STRING'}
-    keys = cols.keys()    # Sets the order
-    sql_cols = ', '.join(['{} {}'.format(key, cols[key]) for key in keys])
-    cursor.execute('CREATE TABLE records({})'.format(sql_cols))
-    with open('/tmp/inspector_demo.csv') as f:
-        dr = csv.DictReader(f)
-        to_db = [tuple(i[k] for k in keys) for i in dr]
-    query = 'INSERT INTO records({}) VALUES ({});'.format(
-                    ','.join(keys), ','.join(['?' for _ in keys]))
-    cursor.executemany(query, to_db)
-    connection.commit()
-    connection.close()
-
 #TODO: Clean up aggregation code and bin
 @app.route('/')
 def root():
-    instances = [t[0] for t in query('SELECT DISTINCT instance_name FROM records')]
+    instances = data['instance_name'].unique()
 
     # TODO: clean up this MAGIC
-    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=?', (instance,))[0][0] for instance in instances]
+    rules = [group['run_check_violation_cnt'].sum() for key, group in data.groupby('instance_name')]
     rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
                         [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=?', (instance,)) for instance in instances]]
     rimages = [gen_image(history) for history in rule_history]
