@@ -2,8 +2,8 @@
 
 import sys
 import json
+import pandas
 import datetime
-import random
 import sqlite3
 import csv
 from flask import Flask, render_template, Markup
@@ -57,19 +57,6 @@ def setupdb():
     cursor.executemany(query, to_db)
     connection.commit()
     connection.close()
-
-def strtotime(s):
-    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
-
-def query(q, args=None):
-    connection = sqlite3.connect(config["db"])
-    cursor = connection.cursor()
-    if args:
-        cursor.execute(q, args)
-    else:
-        cursor.execute(q)
-    res = cursor.fetchall()
-    return res
 
 #TODO: Clean up aggregation code and bin
 @app.route('/')
@@ -140,29 +127,27 @@ def table(instance, database, table):
     return str("TODO")
 
 
-# TODO: Replace
-def get_number():
-    return random.randint(0, 1000)
-
-
-# TODO: REPLACE
-def get_numbers(n):
-    return [random.randint(0, 1000) for i in range(n)]
-
-
-# TODO: Replace
-def gen_tables():
-    dbs = ['security', 'metrics']
-    tables = ['users', 'metrics', 'addresses']
-    return dbs, tables
-
-
 def gen_image(points):
     # Assumes equal point spacing
     fig = plt.figure(figsize=(5, 1))
     ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
     ax.plot(points)
     return Markup(mpld3.fig_to_html(fig))
+
+
+def strtotime(s):
+    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+
+
+def query(q, args=None):
+    connection = sqlite3.connect(config["db"])
+    cursor = connection.cursor()
+    if args:
+        cursor.execute(q, args)
+    else:
+        cursor.execute(q)
+    res = cursor.fetchall()
+    return res
 
 
 if __name__ == '__main__':
