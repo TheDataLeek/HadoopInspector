@@ -377,7 +377,7 @@ def get_args():
                         help='Provides more verbose help')
     parser.add_argument('--target-dir',
                         default='/tmp',
-                        help='Specifies the directory the demo data will be written to.  Default is \tmp')
+                        help='Specifies the directory the demo data will be written to.  Default is \\tmp')
 
     args = parser.parse_args()
     if args.long_help:
