@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import sys
 import json
 import random
 import sqlite3
+import csv
 from flask import Flask, render_template, Markup
 import matplotlib.pyplot as plt
 import mpld3
@@ -15,6 +17,40 @@ print(config)
 connection = sqlite3.connect(config["db"])
 cursor = connection.cursor()
 
+cols = {'instance':'STRING',
+        'database_name':'STRING',
+        'table_name':'STRING',
+        'table_partitioned':'INTEGER',
+        'run_start_timestamp':'STRING',
+        'run_mode':'STRING',
+        'partition_key':'STRING',
+        'partition_value':'STRING',
+        'check_name':'STRING',
+        'check_policy_type':'STRING',
+        'check_type':'STRING',
+        'run_check_start_timestamp':'STRING',
+        'run_check_end_timestamp':'STRING',
+        'run_check_mode':'STRING',
+        'run_check_rc':'INTEGER',
+        'run_check_violation_cnt':'INTEGER',
+        'run_check_anomaly_score':'INTEGER',
+        'run_check_scope':'INTEGER',
+        'run_check_unit':'STRING',
+        'run_check_severity_score':'INTEGER',
+        'run_check_validated':'STRING'}
+
+sql_cols = ', '.join(['{} {}'.format(key, item) for key, item in cols.items()])
+
+cursor.execute('CREATE TABLE records({})'.format(sql_cols))
+
+with open('/tmp/inspector_demo.csv') as f:
+    dr = csv.DictReader(f)
+    to_db = [tuple(i[k] for k in cols.keys()) for i in dr]
+
+print(to_db)
+
+
+sys.exit(0)
 
 @app.route('/')
 def root():
