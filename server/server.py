@@ -12,7 +12,9 @@ import mpld3
 app = Flask(__name__)
 config = json.loads(open('../config/config.json').read())
 
-data = pandas.read_csv('/tmp/inspector_demo.csv')
+data = pandas.read_csv('/tmp/inspector_demo.csv',
+                        parse_dates=['run_start_timestamp', 'run_check_start_timestamp', 'run_check_end_timestamp'],
+                        date_parser=lambda d: datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S"))
 
 def main():
     app.run(host='localhost',
@@ -24,35 +26,40 @@ def main():
 @app.route('/')
 def root():
     instances = data['instance_name'].unique()
-
-    # TODO: clean up this MAGIC
-    rules = [group['run_check_violation_cnt'].sum() for key, group in data.groupby('instance_name')]
-    rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
-                        [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=?', (instance,)) for instance in instances]]
-    rimages = [gen_image(history) for history in rule_history]
-    checks = [query('SELECT SUM(run_check_anomaly_score) FROM records WHERE instance_name=?', (instance,))[0][0] for instance in instances]
-    check_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
-                        [query('SELECT run_check_anomaly_score, run_check_end_timestamp FROM records WHERE instance_name=?', (instance,)) for instance in instances]]
-    cimages = [gen_image(history) for history in check_history]
+    rules, rimages = time_series_data('run_check_violation_cnt', 'instance_name', data)
+    checks, cimages = time_series_data('run_check_anomaly_score', 'instance_name', data)
 
     table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
 
     content = render_template('index.html', name='Hadoop QA', table=table)
     return content
 
+
+def time_series_data(tkey, gkey, dframe):
+    scoresum = [group[tkey].sum() for key, group in dframe.groupby(gkey)]
+    # Returns an array of pandas TimeSeries
+    history_raw = [pandas.Series(df[tkey].values, index=df['run_check_end_timestamp'].values)
+                        for df in [group[['run_check_end_timestamp', tkey]]
+                                   for key, group in dframe.groupby(gkey)]]
+    # Resample each timeseries by minute
+    history = [hist.resample('T', how='count') for hist in history_raw]
+    # Create each image
+    images = []
+    for hist in history:
+        fig = plt.figure(figsize=(5, 1))
+        ax = hist.plot()
+        fig.suptitle(tkey)
+        images.append(Markup(mpld3.fig_to_html(fig)))
+    return scoresum, images
+
+
 @app.route('/inspect/<instance>')
 def instance(instance):
-    dbs = [t[0] for t in query('SELECT DISTINCT database_name FROM records WHERE instance_name=?', (instance,))]
+    dframe = data.loc[data['instance_name'] == instance]
+    dbs = dframe['database_name'].unique()
 
-    # TODO: clean up this MAGIC
-    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=? AND database_name=?', (instance, database))[0][0] for database in dbs]
-    rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
-                        [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=?', (instance, database)) for database in dbs]]
-    rimages = [gen_image(history) for history in rule_history]
-    checks = [query('SELECT SUM(run_check_anomaly_score) FROM records WHERE instance_name=? AND database_name=?', (instance, database))[0][0] for database in dbs]
-    check_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
-                        [query('SELECT run_check_anomaly_score, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=?', (instance, database)) for database in dbs]]
-    cimages = [gen_image(history) for history in check_history]
+    rules, rimages = time_series_data('run_check_violation_cnt', 'database_name', dframe)
+    checks, cimages = time_series_data('run_check_anomaly_score', 'database_name', dframe)
 
     table = [[dbs[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(dbs))]
 
@@ -64,22 +71,16 @@ def instance(instance):
 
 @app.route('/inspect/<instance>/<database>')
 def database(instance, database):
-    tables = [t[0] for t in query('SELECT DISTINCT table_name FROM records WHERE database_name=? AND instance_name=?', (database, instance))]
+    dframe = data.loc[(data['instance_name'] == instance) & (data['database_name'] == database)]
+    tables = dframe['table_name'].unique()
 
-    # TODO: clean up this MAGIC
-    rules = [query('SELECT SUM(run_check_violation_cnt) FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table))[0][0] for table in tables]
-    rule_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
-                        [query('SELECT run_check_violation_cnt, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table)) for table in tables]]
-    rimages = [gen_image(history) for history in rule_history]
-    checks = [query('SELECT SUM(run_check_anomaly_score) FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table))[0][0] for table in tables]
-    check_history = [[t[0] for t in sorted(p, key=lambda t: strtotime(t[1]))] for p in
-                        [query('SELECT run_check_anomaly_score, run_check_end_timestamp FROM records WHERE instance_name=? AND database_name=? AND table_name=?', (instance, database, table)) for table in tables]]
-    cimages = [gen_image(history) for history in check_history]
+    rules, rimages = time_series_data('run_check_violation_cnt', 'table_name', dframe)
+    checks, cimages = time_series_data('run_check_anomaly_score', 'table_name', dframe)
 
     table = [[tables[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(tables))]
 
     content = render_template('tabular.html',
-                              name=database,
+                              name=instance + '/' + database,
                               table=table)
     return content
 
@@ -87,29 +88,6 @@ def database(instance, database):
 @app.route('/inspect/<instance>/<database>/<table>')
 def table(instance, database, table):
     return str("TODO")
-
-
-def gen_image(points):
-    # Assumes equal point spacing
-    fig = plt.figure(figsize=(5, 1))
-    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-    ax.plot(points)
-    return Markup(mpld3.fig_to_html(fig))
-
-
-def strtotime(s):
-    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
-
-
-def query(q, args=None):
-    connection = sqlite3.connect(config["db"])
-    cursor = connection.cursor()
-    if args:
-        cursor.execute(q, args)
-    else:
-        cursor.execute(q)
-    res = cursor.fetchall()
-    return res
 
 
 if __name__ == '__main__':
