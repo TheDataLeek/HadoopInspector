@@ -2,120 +2,93 @@
 
 import sys
 import json
-import random
-import sqlite3
-import csv
+import pandas
+import datetime
 from flask import Flask, render_template, Markup
 import matplotlib.pyplot as plt
 import mpld3
 
+
 app = Flask(__name__)
 config = json.loads(open('../config/config.json').read())
 
-print(config)
+data = pandas.read_csv('/tmp/inspector_demo.csv',
+                        parse_dates=['run_start_timestamp', 'run_check_start_timestamp', 'run_check_end_timestamp'],
+                        date_parser=lambda d: datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S"))
 
-connection = sqlite3.connect(config["db"])
-cursor = connection.cursor()
-
-cols = {'instance':'STRING',
-        'database_name':'STRING',
-        'table_name':'STRING',
-        'table_partitioned':'INTEGER',
-        'run_start_timestamp':'STRING',
-        'run_mode':'STRING',
-        'partition_key':'STRING',
-        'partition_value':'STRING',
-        'check_name':'STRING',
-        'check_policy_type':'STRING',
-        'check_type':'STRING',
-        'run_check_start_timestamp':'STRING',
-        'run_check_end_timestamp':'STRING',
-        'run_check_mode':'STRING',
-        'run_check_rc':'INTEGER',
-        'run_check_violation_cnt':'INTEGER',
-        'run_check_anomaly_score':'INTEGER',
-        'run_check_scope':'INTEGER',
-        'run_check_unit':'STRING',
-        'run_check_severity_score':'INTEGER',
-        'run_check_validated':'STRING'}
-
-sql_cols = ', '.join(['{} {}'.format(key, item) for key, item in cols.items()])
-
-cursor.execute('CREATE TABLE records({})'.format(sql_cols))
-
-with open('/tmp/inspector_demo.csv') as f:
-    dr = csv.DictReader(f)
-    to_db = [tuple(i[k] for k in cols.keys()) for i in dr]
-
-print(to_db)
-
-
-sys.exit(0)
-
-@app.route('/')
-def root():
-    # TODO: REPLACE CHUNK
-    dbs, tables = gen_tables()
-    rules = [get_number() for _ in dbs]
-    checks = [get_number() for _ in dbs]
-    rimages = [gen_image() for _ in rules]
-    cimages = [gen_image() for _ in checks]
-    table = [[dbs[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(dbs))]
-    ###
-
-    content = render_template('index.html',
-                              name='Hadoop QA',
-                              table=table)
-    return content
-
-
-@app.route('/<database>')
-def database(database):
-    # TODO: Replace CHUNK
-    dbs, tables = gen_tables()
-    rules = [get_number() for _ in tables]
-    checks = [get_number() for _ in tables]
-    rimages = [gen_image() for _ in rules]
-    cimages = [gen_image() for _ in checks]
-    table = [[tables[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(tables))]
-    ###
-
-    content = render_template('database.html',
-                              name=database,
-                              table=table)
-    return content
-
-
-@app.route('/<database>/<table>')
-def table(database, table):
-    return str("TODO")
-
-
-# TODO: Replace
-def get_number():
-    return random.randint(0, 1000)
-
-
-# TODO: REPLACE
-def get_numbers(n):
-    return [random.randint(0, 1000) for i in range(n)]
-
-
-# TODO: Replace
-def gen_tables():
-    dbs = ['security', 'metrics']
-    tables = ['users', 'metrics', 'addresses']
-    return dbs, tables
-
-
-def gen_image():
-    fig = plt.figure(figsize=(5, 1))
-    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-    ax.plot(get_numbers(100))
-    return Markup(mpld3.fig_to_html(fig))
-
-
-if __name__ == '__main__':
+def main():
     app.run(host='localhost',
             port=config['port'],
             debug=True)
+
+
+#TODO: Clean up aggregation code and bin
+@app.route('/')
+def root():
+    instances = data['instance_name'].unique()
+    rules, rimages = time_series_data('run_check_violation_cnt', 'instance_name', data)
+    checks, cimages = time_series_data('run_check_anomaly_score', 'instance_name', data)
+
+    table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
+
+    content = render_template('index.html', name='Hadoop QA', table=table)
+    return content
+
+
+def time_series_data(tkey, gkey, dframe):
+    scoresum = [group[tkey].sum() for key, group in dframe.groupby(gkey)]
+    # Returns an array of pandas TimeSeries
+    history_raw = [pandas.Series(df[tkey].values, index=df['run_check_end_timestamp'].values)
+                        for df in [group[['run_check_end_timestamp', tkey]]
+                                   for key, group in dframe.groupby(gkey)]]
+    # Resample each timeseries by minute
+    history = [hist.resample('T', how='count') for hist in history_raw]
+    # Create each image
+    images = []
+    for hist in history:
+        fig = plt.figure(figsize=(5, 1))
+        ax = hist.plot()
+        fig.suptitle(tkey)
+        images.append(Markup(mpld3.fig_to_html(fig)))
+    return scoresum, images
+
+
+@app.route('/inspect/<instance>')
+def instance(instance):
+    dframe = data.loc[data['instance_name'] == instance]
+    dbs = dframe['database_name'].unique()
+
+    rules, rimages = time_series_data('run_check_violation_cnt', 'database_name', dframe)
+    checks, cimages = time_series_data('run_check_anomaly_score', 'database_name', dframe)
+
+    table = [[dbs[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(dbs))]
+
+    content = render_template('tabular.html',
+                              name=instance,
+                              table=table)
+    return content
+
+
+@app.route('/inspect/<instance>/<database>')
+def database(instance, database):
+    dframe = data.loc[(data['instance_name'] == instance) & (data['database_name'] == database)]
+    tables = dframe['table_name'].unique()
+
+    rules, rimages = time_series_data('run_check_violation_cnt', 'table_name', dframe)
+    checks, cimages = time_series_data('run_check_anomaly_score', 'table_name', dframe)
+
+    table = [[tables[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(tables))]
+
+    content = render_template('tabular.html',
+                              name=instance + '/' + database,
+                              table=table)
+    return content
+
+
+@app.route('/inspect/<instance>/<database>/<table>')
+def table(instance, database, table):
+    return str("TODO")
+
+
+if __name__ == '__main__':
+    sys.exit(main())
