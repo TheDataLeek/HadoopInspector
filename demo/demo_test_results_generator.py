@@ -710,9 +710,14 @@ def get_ts_from_dt(dt):
 
 def get_curr_datetime(curr_datetime, run_start_datetime):
     if curr_datetime is None:
+        # first time used
         return run_start_datetime
-    else:
+    elif curr_datetime > run_start_datetime:
+        # after the first tie for a day
         return curr_datetime + datetime.timedelta(seconds=1)
+    else:
+        # first time for a day
+        return run_start_datetime
 
 
 def get_month_days(month_of_year):
