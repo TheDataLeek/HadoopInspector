@@ -87,7 +87,15 @@ def database(instance, database):
 
 @app.route('/inspect/<instance>/<database>/<table>')
 def table(instance, database, table):
-    return str("TODO")
+    dframe = data.loc[(data['instance_name'] == instance) &
+                      (data['database_name'] == database) &
+                      (data['table_name'] == table)]
+    content = render_template('details.html',
+                              instance=instance,
+                              database=database,
+                              table=table,
+                              dframe=str(dframe))
+    return content
 
 
 if __name__ == '__main__':

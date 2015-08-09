@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>{{ instance }} -> {{ database }} -> {{ table }}</h1>
+<table class=details>
+    <tr>
+        <td>{{ row }}</td>
+    </tr>
+</table>
+{% endblock %}
