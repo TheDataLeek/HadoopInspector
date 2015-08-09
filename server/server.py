@@ -42,7 +42,7 @@ def time_series_data(tkey, gkey, dframe):
                         for df in [group[['run_check_end_timestamp', tkey]]
                                    for key, group in dframe.groupby(gkey)]]
     # Resample each timeseries by minute
-    history = [hist.resample('T', how='count') for hist in history_raw]
+    history = [hist.resample('D', how='count') for hist in history_raw]
     # Create each image
     images = []
     for hist in history:
@@ -94,7 +94,7 @@ def table(instance, database, table):
                               instance=instance,
                               database=database,
                               table=table,
-                              dframe=str(dframe))
+                              dframe=dframe)
     return content
 
 
