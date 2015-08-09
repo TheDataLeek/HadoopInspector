@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block body %}
+<h1>{{ instance }} -> {{ database }} -> {{ table }}</h1>
+<table class=details>
+    {% for row in dframe %}
+        {% for item in dframe['check_name'] %}
+            <tr><td>{{ item }}</td></tr>
+        {% endfor %}
+    {% endfor %}
+</table>
+{% endblock %}

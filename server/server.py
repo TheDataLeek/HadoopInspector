@@ -42,7 +42,7 @@ def time_series_data(tkey, gkey, dframe):
                         for df in [group[['run_check_end_timestamp', tkey]]
                                    for key, group in dframe.groupby(gkey)]]
     # Resample each timeseries by minute
-    history = [hist.resample('T', how='count') for hist in history_raw]
+    history = [hist.resample('D', how='count') for hist in history_raw]
     # Create each image
     images = []
     for hist in history:
@@ -87,7 +87,15 @@ def database(instance, database):
 
 @app.route('/inspect/<instance>/<database>/<table>')
 def table(instance, database, table):
-    return str("TODO")
+    dframe = data.loc[(data['instance_name'] == instance) &
+                      (data['database_name'] == database) &
+                      (data['table_name'] == table)]
+    content = render_template('details.html',
+                              instance=instance,
+                              database=database,
+                              table=table,
+                              dframe=dframe)
+    return content
 
 
 if __name__ == '__main__':
