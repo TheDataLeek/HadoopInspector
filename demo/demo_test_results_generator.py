@@ -11,7 +11,16 @@
     There are three tests for the two lookup tables, and six for the large
     fact table that run daily.  The program generates one run for every day
     from 2015-01-01 to 2015-12-31.  A small random number of tests will find
-    violations.
+    violations.  The user tables that this demo creates tests for include:
+        - cust_type                (~ 5 rows)
+        - asset_type               (~ 5 rows)
+        - event_type               (~ 5 rows)
+        - dates                    (~ 3650 rows)
+        - locations                (tbd)
+        - customers                (~ 10,000 rows)
+        - assets                   (~ 10,000,000 rows)
+        - cust_asset_events        (~ 3,000,000,000 rows) = avg of 1 event/asset/day for 7 years
+        - cust_asset_event_month   (~ 840,000,000 rows) = 1 row/asset/month for 7 years
 
     This results data will be written by default to /tmp/inspector_demo.csv.
     4380 records will be written to this comma-delimited csv file without
@@ -66,18 +75,35 @@ user_tables = \
                  'violation_unit':  'rows',
                  'severity':        'high',
                  'mode':            'full',
+                 'failure_rate':    0.01,
                  'check_type':      'rule' },
              'cust_name_uk':
                 {'policy_type':     'quality',
                  'violation_unit':  'rows',
                  'severity':        'high',
                  'mode':            'full',
+                 'failure_rate':    0.01,
                  'check_type':      'rule' },
              'cust_not_empty':
                 {'policy_type':     'quality',
                  'violation_unit':  'tables',
                  'severity':        'high',
                  'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
                  'check_type':      'rule' },
             }
         }
@@ -96,6 +122,155 @@ user_tables = \
                  'violation_unit':  'rows',
                  'severity':        'high',
                  'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'asset_name_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'asset_not_empty':
+                {'policy_type':     'quality',
+                 'violation_unit':  'tables',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+            }
+        }
+    ,
+    'event_type':
+        {'cols':
+            {'event_type_id',
+             'event_type_name',
+            },
+         'mode': 'full',
+         'partition_key': None,
+         'partition_row_cnt_avg': 5,
+         'checks':
+            {'event_type_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'event_name_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'event_not_empty':
+                {'policy_type':     'quality',
+                 'violation_unit':  'tables',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+            }
+        }
+    ,
+    'customers':
+        {'cols':
+            {'cust_id',
+             'cust_name',
+             'cust_status',
+             'cust_type_id'
+            },
+         'mode': 'full',
+         'partition_key': None,
+         'partition_row_cnt_avg': 10000,
+         'checks':
+            {'cust_id_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'check_type':      'rule' },
+             'cust_name_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'check_type':      'rule' },
+             'cust_status_ck':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'check_type':      'rule' },
+             'cust_typeid_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.1,
+                 'check_type':      'rule' },
+            }
+        }
+    ,
+    'assets':
+        {'cols':
+            {'cust_id',
+             'asset_id',
+             'asset_name',
+             'asset_status',
+             'asset_type_id'
+            },
+         'mode': 'full',
+         'partition_key': None,
+         'partition_row_cnt_avg': 10000000,
+         'checks':
+            {'asset_id_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
                  'check_type':      'rule' },
              'asset_name_uk':
                 {'policy_type':     'quality',
@@ -103,11 +278,109 @@ user_tables = \
                  'severity':        'high',
                  'mode':            'full',
                  'check_type':      'rule' },
-             'asset_not_empty':
+             'asset_status_ck':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'check_type':      'rule' },
+             'asset_typeid_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.1,
+                 'check_type':      'rule' },
+            }
+        }
+    ,
+    'dates':
+        {'cols':
+            {'date_id',
+             'date_name',
+             'year',
+             'quarter_of_year',
+             'month_of_year',
+             'month_name',
+             'week_of_year_iso',
+             'day_of_month',
+             'day_of_year',
+             'day_of_week',
+             'day_name',
+             'day_name_abbrev'
+            },
+         'mode': 'full',
+         'partition_key': None,
+         'partition_row_cnt_avg': 3650,
+         'checks':
+            {'date_id_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'date_name_uk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'monthofyear_range_ck':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'weekofyear_range_ck':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'dayofmonth_range_ck':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'dates_not_empty':
                 {'policy_type':     'quality',
                  'violation_unit':  'tables',
                  'severity':        'high',
                  'mode':            'full',
+                 'failure_rate':    0.01,
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
                  'check_type':      'rule' },
             }
         }
@@ -118,10 +391,11 @@ user_tables = \
              'asset_id',
              'event_id',
              'date_id',
+             'event_type_id',
             },
          'mode': 'incremental',
          'partition_key': 'date_id',
-         'partition_row_cnt_avg': 1000000,
+         'partition_row_cnt_avg': 400000000, # 400 mil
          'checks':
             {'cust_id_fk':
                 {'policy_type':     'quality',
@@ -136,6 +410,12 @@ user_tables = \
                  'mode':            'incremental',
                  'check_type':      'rule' },
              'date_id_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'event_type_id_fk':
                 {'policy_type':     'quality',
                  'violation_unit':  'rows',
                  'severity':        'high',
@@ -158,6 +438,85 @@ user_tables = \
                  'violation_unit':  'tables',
                  'severity':        'low',
                  'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.1,
+                 'check_type':      'rule' },
+            },
+        },
+    'cust_asset_event_months':
+        {'cols':
+            {'cust_id',
+             'asset_id',
+             'month_id',
+             'event_type_id',
+             'event_count',
+            },
+         'mode': 'incremental',
+         'partition_key': 'date_id',
+         'partition_row_cnt_avg': 40000000, # 40 mil
+         'checks':
+            {'cust_id_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'asset_id_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'month_id_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'event_type_id_fk':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'event_count_consistency_ck':
+                {'policy_type':     'consistency',
+                 'violation_unit':  'rows',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'cols_not_null':
+                {'policy_type':     'quality',
+                 'violation_unit':  'rows',
+                 'severity':        'medium',
+                 'mode':            'incremental',
+                 'failure_rate':    0.1,
+                 'check_type':      'rule' },
+             'table_not_empty':
+                {'policy_type':     'quality',
+                 'violation_unit':  'tables',
+                 'severity':        'high',
+                 'mode':            'incremental',
+                 'check_type':      'rule' },
+             'stats_exist':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.001,
+                 'check_type':      'rule' },
+             'stats_not_stale':
+                {'policy_type':     'data-management',
+                 'violation_unit':  'tables',
+                 'severity':        'low',
+                 'mode':            'full',
+                 'failure_rate':    0.1,
                  'check_type':      'rule' },
             }
         }
@@ -236,18 +595,26 @@ def create_test_file(dirname):
 
 
 def get_violation_cnt(table_name, check_name):
-    mode          = user_tables[table_name]['mode']
-    partition_key = user_tables[table_name]['partition_key']
-    avg_row_cnt   = user_tables[table_name]['partition_row_cnt_avg']
-    violation_unit      = user_tables[table_name]['checks'][check_name]['violation_unit']
-    if random.random() < 0.1:
+    mode           = user_tables[table_name]['mode']
+    partition_key  = user_tables[table_name]['partition_key']
+    avg_row_cnt    = user_tables[table_name]['partition_row_cnt_avg']
+    violation_unit = user_tables[table_name]['checks'][check_name]['violation_unit']
+    failure_rate   = user_tables[table_name]['checks'][check_name].get('failure_rate', 0.1)
+
+    if random.random() < failure_rate:
         if violation_unit == 'table':
             return 1
         else:
-            if random.random() < 0.5:
-                return int(avg_row_cnt * random.random())
-            else:
+            if partition_key is None and random.random() < 0.5:
+                # screwed up the all rows, probably because you reloaded 100% of
+                # the data wrong.  Maybe due to:
+                #    - loaded same data twice
+                #    - failed to load
                 return int(avg_row_cnt)
+            else:
+                # screwed up a subset of rows, probably a subset of a single
+                # partition
+                return int(avg_row_cnt * random.random())
     else:
         return 0
 
