@@ -1,0 +1,507 @@
+{
+    "customers": {
+        "partition_row_cnt_avg": 10000, 
+        "partition_key": null, 
+        "cols": [
+            "cust_id", 
+            "cust_name", 
+            "cust_status", 
+            "cust_type_id"
+        ], 
+        "checks": {
+            "cust_typeid_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "cust_name_uk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "cust_id_uk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "cust_status_ck": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }, 
+        "mode": "full"
+    }, 
+    "event_type": {
+        "partition_row_cnt_avg": 5, 
+        "partition_key": null, 
+        "cols": [
+            "event_type_id", 
+            "event_type_name"
+        ], 
+        "checks": {
+            "event_not_empty": {
+                "severity": "high", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "event_name_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "event_type_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }
+        }, 
+        "mode": "full"
+    }, 
+    "dates": {
+        "partition_row_cnt_avg": 3650, 
+        "partition_key": null, 
+        "cols": [
+            "date_id", 
+            "date_name", 
+            "year", 
+            "quarter_of_year", 
+            "month_of_year", 
+            "month_name", 
+            "week_of_year_iso", 
+            "day_of_month", 
+            "day_of_year", 
+            "day_of_week", 
+            "day_name", 
+            "day_name_abbrev"
+        ], 
+        "checks": {
+            "date_name_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "dates_not_empty": {
+                "severity": "high", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "monthofyear_range_ck": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "weekofyear_range_ck": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "date_id_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "dayofmonth_range_ck": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }
+        }, 
+        "mode": "full"
+    }, 
+    "cust_asset_event_months": {
+        "partition_row_cnt_avg": 40000000, 
+        "partition_key": "date_id", 
+        "cols": [
+            "cust_id", 
+            "asset_id", 
+            "month_id", 
+            "event_type_id", 
+            "event_count"
+        ], 
+        "checks": {
+            "event_count_consistency_ck": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "consistency", 
+                "mode": "incremental"
+            }, 
+            "cols_not_null": {
+                "severity": "medium", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.1, 
+                "mode": "incremental", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "event_type_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "table_not_empty": {
+                "violation_unit": "tables", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "asset_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "cust_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "month_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }
+        }, 
+        "mode": "incremental"
+    }, 
+    "asset_type": {
+        "partition_row_cnt_avg": 5, 
+        "partition_key": null, 
+        "cols": [
+            "asset_type_id", 
+            "asset_type_name"
+        ], 
+        "checks": {
+            "asset_not_empty": {
+                "severity": "high", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "asset_name_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "asset_type_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }
+        }, 
+        "mode": "full"
+    }, 
+    "cust_asset_events": {
+        "partition_row_cnt_avg": 400000000, 
+        "partition_key": "date_id", 
+        "cols": [
+            "cust_id", 
+            "asset_id", 
+            "event_id", 
+            "date_id", 
+            "event_type_id"
+        ], 
+        "checks": {
+            "date_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "event_type_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "table_not_empty": {
+                "violation_unit": "tables", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "asset_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "cust_id_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "event_id_not_null": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "incremental"
+            }
+        }, 
+        "mode": "incremental"
+    }, 
+    "cust_type": {
+        "partition_row_cnt_avg": 5, 
+        "partition_key": null, 
+        "cols": [
+            "cust_type_id", 
+            "cust_type_name"
+        ], 
+        "checks": {
+            "cust_name_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "cust_type_uk": {
+                "severity": "high", 
+                "violation_unit": "rows", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "cust_not_empty": {
+                "severity": "high", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.01, 
+                "mode": "full", 
+                "policy_type": "quality", 
+                "check_type": "rule"
+            }
+        }, 
+        "mode": "full"
+    }, 
+    "assets": {
+        "partition_row_cnt_avg": 10000000, 
+        "partition_key": null, 
+        "cols": [
+            "cust_id", 
+            "asset_id", 
+            "asset_name", 
+            "asset_status", 
+            "asset_type_id"
+        ], 
+        "checks": {
+            "asset_id_uk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "asset_status_ck": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "asset_name_uk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "asset_typeid_fk": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "high", 
+                "policy_type": "quality", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }, 
+        "mode": "full"
+    }
+}
