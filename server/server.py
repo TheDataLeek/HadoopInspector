@@ -35,20 +35,26 @@ def root():
     return content
 
 
-def time_series_data(tkey, gkey, dframe):
-    scoresum = [group[tkey].sum() for key, group in dframe.groupby(gkey)]
+def time_series_data(timeserieskey, groupkey, dframe):
+    scoresum = [group[timeserieskey].sum() for key, group in dframe.groupby(groupkey)]
     # Returns an array of pandas TimeSeries
-    history_raw = [pandas.Series(df[tkey].values, index=df['run_check_end_timestamp'].values)
-                        for df in [group[['run_check_end_timestamp', tkey]]
-                                   for key, group in dframe.groupby(gkey)]]
+    history_raw = [pandas.Series(df[timeserieskey].values, index=df['run_start_timestamp'].values)
+                        for df in [group[['run_start_timestamp', timeserieskey]]
+                                   for key, group in dframe.groupby(groupkey)]]
     # Resample each timeseries by minute
     history = [hist.resample('D', how='count') for hist in history_raw]
     # Create each image
     images = []
     for hist in history:
-        fig = plt.figure(figsize=(5, 1))
+        fig = plt.figure(figsize=(6, 2))
         ax = hist.plot()
-        fig.suptitle(tkey)
+        ax.tick_params(
+            axis='both',
+            which='both',
+            labelbottom='off',
+            labelleft='off'
+        )
+        plt.title(timeserieskey)
         images.append(Markup(mpld3.fig_to_html(fig)))
     return scoresum, images
 

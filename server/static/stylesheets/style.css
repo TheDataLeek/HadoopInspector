@@ -5,11 +5,8 @@ body {
 
 table {
     border: 1px solid black;
-}
-
-td {
-    width: 100px;
-    height: 100px;
+    table-layout: fixed;
+    text-align: center;
 }
 
 .header {
@@ -30,13 +27,4 @@ td {
 
 .page h1 {
     text-align: center;
-}
-
-.page table tr {
-    display: inline;
-    float: none;
-}
-
-.page td {
-    width: 15%;
 }
