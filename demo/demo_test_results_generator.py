@@ -292,7 +292,7 @@ def get_args():
                         action='store_true',
                         help='Provides more verbose help')
     parser.add_argument('--user-instance',
-                        choices=['prod', 'prodfailover'],
+                        choices=['prod', 'prodfailover', 'staging', 'dev'],
                         required=True)
     parser.add_argument('--user-db',
                         choices=['AssetUserEvents'],
