@@ -1,0 +1,351 @@
+{
+    "customers": {
+        "partition_row_cnt_avg": 10000, 
+        "partition_key": null, 
+        "mode": "full",
+        "cols": [
+            "cust_id", 
+            "cust_name", 
+            "cust_status", 
+            "cust_type_id"
+        ], 
+        "checks": {
+           "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }
+    }, 
+    "event_type": {
+        "partition_row_cnt_avg": 5, 
+        "partition_key": null, 
+        "mode": "full",
+        "cols": [
+            "event_type_id", 
+            "event_type_name"
+        ], 
+        "checks": {
+           "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }
+    }, 
+    "dates": {
+        "partition_row_cnt_avg": 3650, 
+        "partition_key": null, 
+        "mode": "full",
+        "cols": [
+            "date_id", 
+            "date_name", 
+            "year", 
+            "quarter_of_year", 
+            "month_of_year", 
+            "month_name", 
+            "week_of_year_iso", 
+            "day_of_month", 
+            "day_of_year", 
+            "day_of_week", 
+            "day_name", 
+            "day_name_abbrev"
+        ], 
+        "checks": {
+           "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }
+    }, 
+    "cust_asset_event_months": {
+        "partition_row_cnt_avg": 40000000, 
+        "partition_key": "date_id", 
+        "mode": "incremental",
+        "cols": [
+            "cust_id", 
+            "asset_id", 
+            "month_id", 
+            "event_type_id", 
+            "event_count"
+        ], 
+        "checks": {
+           "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+      }
+    }, 
+    "asset_type": {
+        "partition_row_cnt_avg": 5, 
+        "partition_key": null, 
+        "mode": "full",
+        "cols": [
+            "asset_type_id", 
+            "asset_type_name"
+        ], 
+        "checks": {
+           "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+       }
+    }, 
+    "cust_asset_events": {
+        "partition_row_cnt_avg": 400000000, 
+        "partition_key": "date_id", 
+        "mode": "incremental",
+        "cols": [
+            "cust_id", 
+            "asset_id", 
+            "event_id", 
+            "date_id", 
+            "event_type_id"
+        ], 
+        "checks": {
+           "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }
+    }, 
+    "cust_type": {
+        "partition_row_cnt_avg": 5, 
+        "partition_key": null, 
+        "mode": "full",
+        "cols": [
+            "cust_type_id", 
+            "cust_type_name"
+        ], 
+        "checks": {
+            "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }
+    }, 
+    "assets": {
+        "partition_row_cnt_avg": 10000000, 
+        "partition_key": null, 
+        "mode": "full",
+        "cols": [
+            "cust_id", 
+            "asset_id", 
+            "asset_name", 
+            "asset_status", 
+            "asset_type_id"
+        ], 
+        "checks": {
+            "replication_consistency_peer_row_cnt": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+            "replication_consistency_peer_field_spot_check": {
+                "violation_unit": "rows", 
+                "check_type": "rule", 
+                "severity": "medium", 
+                "policy_type": "consistency", 
+                "mode": "full"
+            }, 
+           "stats_not_stale": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.1, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }, 
+            "stats_exist": {
+                "severity": "low", 
+                "violation_unit": "tables", 
+                "failure_rate": 0.001, 
+                "mode": "full", 
+                "policy_type": "data-management", 
+                "check_type": "rule"
+            }
+        }
+    }
+}
