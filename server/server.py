@@ -43,6 +43,7 @@ def time_series_data(timeserieskey, groupkey, dframe):
                                    for key, group in dframe.groupby(groupkey)]]
     # Resample each timeseries by minute
     history = [hist.resample('D', how='count') for hist in history_raw]
+    print(history[0].loc[history[0] >= datetime.datetime.now() - datetime.timedelta(days=7)])
     # Create each image
     images = []
     for hist in history:
