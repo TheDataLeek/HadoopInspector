@@ -1,12 +1,21 @@
 {% extends "layout.html" %}
 {% block body %}
 <table class=reporttable>
+    <tr>
+        <td style="width:8%">Name</td>
+        <td style="width:12%">Rule Violations</td>
+        <td style="width:20%">7 Day Graph</td>
+        <td style="width:10%">Check Warnings</td>
+        <td style="width:8%">7 Day Graph</td>
+    </tr>
     {% for row in table %}
     <tr>
-        <td><a href="/inspect/{{ name }}/{{ row[0] }}">{{ row[0] }}</a></td>
-        <td>{{ row[1] }}</td><td>{{ row[2] }}</td>
-        <td>{{ row[3] }}</td><td>{{ row[4] }}</td>
-        <td>Generate Report Button</td>
+        <td style="width:8%"><a href="/inspect/{{ name }}/{{ row[0] }}">{{ row[0] }}</a></td>
+        <td style="width:12%">{{ row[1] }}</td>
+        <td style="width:20%">{{ row[2] }}</td>
+        <td style="width:10%">{{ row[3] }}</td>
+        <td style="width:8%">{{ row[4] }}</td>
+        <td>Generate Report</td>
     </tr>
     {% endfor %}
 </table>
