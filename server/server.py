@@ -31,7 +31,7 @@ def root():
 
     table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
 
-    content = render_template('index.html', name='Hadoop QA', table=table)
+    content = render_template('index.html', name='Hadoop Inspector', table=table)
     return content
 
 
