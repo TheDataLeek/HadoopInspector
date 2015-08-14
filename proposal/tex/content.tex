@@ -1,5 +1,5 @@
 \begin{abstract}
-This project attempts to act as a health report for your hadoop cluster. At its core, this tool acts as a Hadoop
+This project attempts to act as a health report for your Hadoop cluster. At its core, this tool acts as a Hadoop
 Testing Framework. Tests are either in the form of rules or checks, and either flag the table for review if a rule
 fails, or throws a warning if a check fails. Tests can be scheduled, and the incremental output can be viewed through
 the local frontend. This allows for the user to view the health and status of their database over time.
@@ -10,7 +10,7 @@ This tool attempts to perform health checks on your Hadoop cluster through autom
 of these scripts can be viewed over time to determine the status of the cluster, and how its status compares to the
 last few days.
 
-\section{Tests}
+\section{Checks}
 Every test is simply a script that lives in a type-specific folder. Rules and Checks exist separately.
 
 Each script returns a JSON-encoded object to {\ttfamily stdout} that meets the following specification.
@@ -30,7 +30,7 @@ Each script returns a JSON-encoded object to {\ttfamily stdout} that meets the f
 
     An example rule would be that a specific column only contains integers.
 
-    \subsection{Checks}
+    \subsection{Warning}
     Checks are suggestions about specific tables, or databases. These are a lot more fluid, and a warning from a check does
     not necessarily indicate an issue with the database, but rather that something new may have happened.
 
