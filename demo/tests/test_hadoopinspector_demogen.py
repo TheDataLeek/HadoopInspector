@@ -1,11 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 from __future__ import division
 import sys, os
 from os.path import join as pjoin
 from os.path import dirname
 
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
-import demo_test_results_generator as mod
+import hadoopinspector_demogen as mod
 
 
 class TestGetScope(object):
