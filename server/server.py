@@ -42,17 +42,16 @@ def time_series_data(timeserieskey, groupkey, dframe):
                         for df in [group[['run_start_timestamp', timeserieskey]]
                                    for key, group in dframe.groupby(groupkey)]]
     # Resample each timeseries by minute
-    history = [hist.resample('D', how='count') for hist in history_raw]
-    print(history[0].loc[history[0] >= datetime.datetime.now() - datetime.timedelta(days=7)])
+    history = [hist.resample('M', how='count')[:10000] for hist in history_raw]
     # Create each image
     images = []
     for hist in history:
-        fig = plt.figure(figsize=(6, 2))
+        fig = plt.figure(figsize=(6, 3))
         ax = hist.plot()
         ax.tick_params(
             axis='both',
             which='both',
-            labelbottom='off',
+            labelbottom='on',
             labelleft='off'
         )
         plt.title(timeserieskey)
