@@ -1,7 +1,13 @@
 \begin{abstract}
+Hadoop Inspector is a large-scale data health inspector. Periodically it will analyze a given Hadoop Cluster and search
+for pre-set rule violations, and warn if the data contains outliers. This tool also provides a web interface to examine
+the both the current integrity of the cluster, as well as the historical integrity with time series graphs. The current
+state of the project exists as a demonstration of effectiveness, as well as a ground point for further work.
+
+Submitted on August 14, 2015 for the Cloudera Strata Competition.
 \end{abstract}
 
-\section{Background}
+\section{Motivation}
 Data quality problems have plagued analytical systems for twenty years: continually appearing in the top four reasons
 for project failure. In this space data quality problems loom large - a small defect that could be safely ignored or
 forgotten in the transactional world hamper queries and cause users to question our credibility for months.
