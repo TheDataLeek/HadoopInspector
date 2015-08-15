@@ -12,11 +12,12 @@ import mpld3
 app = Flask(__name__)
 config = json.loads(open('../config/config.json').read())
 
+os.system('rm /tmp/inspector_demo.csv')
+os.system('python ../scripts/hadoopinspector_demogen.py --user-instance prod --user-db AssetUserEvents --dirname ../config /tmp/inspector_demo.csv')
+
 data = pandas.read_csv('/tmp/inspector_demo.csv',
                         parse_dates=['run_start_timestamp', 'run_check_start_timestamp', 'run_check_end_timestamp'],
                         date_parser=lambda d: datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S"))
-
-os.system('python ../scripts/hadoopinspector_demogen.py --user-instance prod --user-db AssetUserEvents /tmp/inspector_demo.csv')
 
 
 def main():
