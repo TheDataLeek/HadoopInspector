@@ -89,8 +89,13 @@ def create_test_file(user_instance, user_db, output_filename):
                   'run_check_anomaly_score', 'run_check_scope', 'run_check_unit',
                   'run_check_severity_score', 'run_check_validated')
 
+    newfile = True if os.exists(output_filename) else False
     outfile = open(output_filename, 'a')
-    outfile.write(','.join(fieldnames) + '\n')
+
+    # write header:
+    if newfile:
+        outfile.write(','.join(fieldnames) + '\n')
+
     writer  = csv.DictWriter(outfile, fieldnames)
     # Establish instance name
     # Establish database name
