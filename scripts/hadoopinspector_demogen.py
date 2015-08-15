@@ -68,7 +68,11 @@ user_tables = {}
 def main():
     global user_tables
     args = get_args()
-    with open('instance-%s_db-%s_config.json' % (args.user_instance, args.user_db), 'r') as f:
+    if args.dirname:
+        fn = pjoin(args.dirname, 'instance-%s_db-%s_config.json' % (args.user_instance, args.user_db))
+    else:
+        fn = 'instance-%s_db-%s_config.json' % (args.user_instance, args.user_db)
+    with open(fn, 'r') as f:
         user_tables = json.load(f)
     create_test_file(args.user_instance, args.user_db, args.outfile)
     print('Demo file created: %s' % args.outfile)
@@ -297,6 +301,8 @@ def get_args():
     parser.add_argument('--user-db',
                         choices=['AssetUserEvents'],
                         required=True)
+    parser.add_argument('--dirname',
+                        help='path to config files')
 
     args = parser.parse_args()
     if args.long_help:
