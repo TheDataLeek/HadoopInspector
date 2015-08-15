@@ -7,10 +7,3 @@
 \BOOKMARK [2][-]{subsection.0.3.2}{Viewing Results}{section.0.3}% 7
 \BOOKMARK [2][-]{subsection.0.3.3}{Configuration}{section.0.3}% 8
 \BOOKMARK [1][-]{section.0.4}{Current Status}{}% 9
-\BOOKMARK [1][-]{section.Alph0.1}{Config Files}{}% 10
-\BOOKMARK [2][-]{subsection.Alph0.1.1}{Server Config}{section.Alph0.1}% 11
-\BOOKMARK [2][-]{subsection.Alph0.1.2}{Demo Data Config}{section.Alph0.1}% 12
-\BOOKMARK [3][-]{subsubsection.Alph0.1.2.1}{/data/instanceprodfailover\137dbAssetUserEvents\137config.json}{subsection.Alph0.1.2}% 13
-\BOOKMARK [3][-]{subsubsection.Alph0.1.2.2}{/data/instancestaging\137dbAssetUserEvents\137config.json}{subsection.Alph0.1.2}% 14
-\BOOKMARK [3][-]{subsubsection.Alph0.1.2.3}{/data/instanceprod\137dbAssetUserEvents\137config.json}{subsection.Alph0.1.2}% 15
-\BOOKMARK [3][-]{subsubsection.Alph0.1.2.4}{/data/instancedev\137dbAssetUserEvents\137config.json}{subsection.Alph0.1.2}% 16
