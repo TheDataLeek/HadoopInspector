@@ -1,5 +1,6 @@
-Hadoop_Inspector
-================
+#Hadoop_Inspector
+
+For a more detailed analysis, please reference [the pdf report](https://github.com/willzfarmer/HadoopInspector/blob/master/proposal/HadoopInspector.pdf)
 
 ##Background
 
