@@ -37,7 +37,8 @@ limited to traditional quality tests, but should be able to test for compliance 
 ##Current Status
 
 Our initial focus has been on building a demo to help us validate ideas, and build some of our UIs.  This includes:
-    - hadoopinspector-demogen - which can generate 50,000+ check results against a hypothetical user hadoop environment
+    - hadoopinspector-demogen.py - which can generate 50,000+ check results against a hypothetical user hadoop environment
+    - hadoopinspector-runner.py - which runs checks from repository and writes results
     - server - which runs a website that allows the user to analyze these demo results
     - report - will produces a pdf check result summary report
 
