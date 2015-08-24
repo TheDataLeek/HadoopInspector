@@ -18,7 +18,7 @@ def main():
 
     check_repo = CheckRepo(args.check_dir)
     tester     = TestRunner(check_repo)
-    tester.run_checks_for_all_tables()
+    tester.run_checks_for_all_tables(args.table)
 
     if args.report:
         for rec in tester.results.get_formatted_results():
@@ -35,6 +35,8 @@ def get_args():
                         help='Which directory to look for the tests in')
     parser.add_argument('--log-dir',
                         help='specifies directory to log output to')
+    parser.add_argument('--table',
+                        help='specifies a single table to test against')
     parser.add_argument('-r', '--report',
                         action='store_true',
                         default=False,
@@ -57,16 +59,18 @@ class TestRunner(object):
         self.results  = CheckResults()
 
 
-    def run_checks_for_all_tables(self):
+    def run_checks_for_all_tables(self, table):
         """
         Runs checks on all tables
 
         :return: None
         """
-        for table in self.repo.tables:
-            for check in self.repo.repo[table]:
-                 count, rc = self._run_check(table, check)
-                 self.results.add(table, check, count, rc)
+        for repo_table in self.repo.tables:
+            if table and table != repo_table:
+                continue
+            for check in self.repo.repo[repo_table]:
+                count, rc = self._run_check(repo_table, check)
+                self.results.add(repo_table, check, count, rc)
 
     def _run_check(self, table, check):
         check_fn = self.repo.repo[table][check]['fqfn']

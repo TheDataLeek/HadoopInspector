@@ -28,11 +28,14 @@ class TestWithMockedCheckFiles(object):
         shutil.rmtree(self.check_dir)
         shutil.rmtree(self.log_dir)
 
-    def run_cmd(self):
+    def run_cmd(self, table=None):
         cmd = [pgm,
-               '-d', self.check_dir,
-               '-l', self.log_dir,
+               '--check-dir', self.check_dir,
+               '--log-dir', self.log_dir,
                '--report' ]
+        if table:
+            cmd.extend(['--table', table])
+
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, close_fds=True)
         results =  p.communicate()[0].decode()
         run_rc = p.returncode
@@ -124,6 +127,26 @@ class TestWithMockedCheckFiles(object):
 
         report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
         assert str(run_rc) == expected_run_rc
+
+    def test_2_tables_with_1_required(self):
+        #--- common to all checks against both tables: ---
+        expected_check_cnt     = 2 # 2 tables with 2 checks for just one
+        expected_check_rc      = '0'
+        expected_run_rc        = '0'
+        expected_violation_cnt = '0'
+
+        table                  = 'customer'
+        add_check(self.check_dir, table, rc=expected_check_rc, out_count=expected_violation_cnt)
+        add_check(self.check_dir, table, rc=expected_check_rc, out_count=expected_violation_cnt)
+        table                  = 'asset'
+        add_check(self.check_dir, table, rc=expected_check_rc, out_count=expected_violation_cnt)
+        add_check(self.check_dir, table, rc=expected_check_rc, out_count=expected_violation_cnt)
+
+        report, run_rc = self.run_cmd(table='asset')
+
+        report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
+        assert str(run_rc) == expected_run_rc
+
 
 
 
