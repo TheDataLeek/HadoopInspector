@@ -28,3 +28,10 @@ table {
 .page h1 {
     text-align: center;
 }
+
+#chart svg {
+    display: block;
+    margin: auto;
+    height: 400px;
+    width: 60%;
+}

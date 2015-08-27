@@ -22,16 +22,34 @@ def main():
 
 @app.route('/')
 def root():
+    n = 10
     names = ['dev', 'qa', 'prod']
     passing = np.random.randint(0, 1, size=len(names))
     numtests = np.random.randint(10, 10000, size=len(names))
-    history = [[random.randint(0, 10) for i in range(30)] for j in range(len(names))]
+    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
 
     data = []
     for i in range(len(names)):
         data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
 
-    content = render_template('index.html', name='Hadoop Inspector', data=data, history=history, history_length=len(history[0]), numvals=len(history))
+    colors = [
+        '#5DA5DA', # (blue)
+        '#B276B2', # (purple)
+        '#60BD68', # (green)
+        '#F17CB0', # (pink)
+        '#B2912F', # (brown)
+        '#FAA43A', # (orange)
+        '#4D4D4D', # (gray)
+        '#DECF3F', # (yellow)
+        '#F15854'] # (red)
+
+    content = render_template('index.html',
+                        name='Hadoop Inspector',
+                        data=data,
+                        colors=colors,
+                        history=history,
+                        history_length=len(history[0]),
+                        numvals=len(history))
     return content
 
 
