@@ -3,11 +3,12 @@
 {% block body %}
 
 <div class="page-header">
-    <h1>Instances</h1>
+    <h1>{{ check }}</h1>
+    <p>{{ desc }}</p>
 </div>
 
 <div class="row">
-    <div class="col-sm-12">
+    <div class="col-sm-8">
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">History</h3>
@@ -19,6 +20,24 @@
             </div>
         </div>
     </div>
+    <div class="col-sm-4">
+        <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Table</th>
+              </tr>
+            </thead>
+            <tbody>
+                {% for row in tables %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="row">
@@ -27,38 +46,15 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Tests Run</th>
+                <th>Time</th>
+                <th>Mode</th>
+                <th>Partition</th>
+                <th>Return Code</th>
                 <th>Violations</th>
+                <th>Severity</th>
               </tr>
             </thead>
             <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>
-                        <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ row[0] }}';">
-                            {{ row[0] }}
-                        </button>
-                    </td>
-                    <td>
-                        <h4>
-                        {% if row[1] == 1 %}
-                            <span class="label label-sucess">
-                                Passing
-                            </span>
-                        {% else %}
-                            <span class="label label-danger">
-                                Failing
-                            </span>
-                        {% endif %}
-                        </h4>
-                    </td>
-                    <td>{{ row[2] }}</td>
-                    <td>{{ row[3] }}</td>
-                </tr>
-                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -66,22 +62,18 @@
 
 <script>
 function convertData() {
-{% for row in history %}
-    var {{ data[loop.index - 1][0] }} = [
-    {% for value in row %}
+    var data = [
+    {% for value in history %}
         {x:{{loop.index}}, y:{{value}}}{% if loop.index != history_length %},{% endif %}
     {% endfor %}
     ];
-{% endfor %}
 
     return [
-        {% for row in history %}
         {
-            values: {{ data[loop.index - 1][0] }},
-            key: '{{ data[loop.index - 1][0] }}',
+            values: data,
+            key: '{{ check }}',
             color: '{{ colors[loop.index] }}'
-        } {% if loop.index != numvals %},{% endif %}
-        {% endfor %}
+        }
     ];
 };
 

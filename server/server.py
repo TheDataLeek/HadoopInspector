@@ -128,21 +128,21 @@ def table(instance, database, table):
 @app.route('/check/<check>')
 def checkdetails(check):
     n = 30
-    names = ['dev', 'qa', 'prod']
-    passing = np.random.randint(0, 1, size=len(names))
-    numtests = np.random.randint(10, 10000, size=len(names))
-    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
 
-    data = []
-    for i in range(len(names)):
-        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
+    tables = ['table1', 'table2', 'table3', 'table4', 'table5']
+    names = ['table1', 'table2', 'table3', 'table4', 'table5']
 
-    content = render_template('instances.html',
-                        data=data,
+    desc = 'Proin suscipit luctus orci placerat fringilla. Donec hendrerit laoreet risus eget adipiscing. Suspendisse in urna ligula, a volutpat mauris. Sed enim mi, bibendum eu pulvinar vel, sodales vitae dui. Pellentesque sed sapien lorem, at lacinia urna. In hac habitasse platea dictumst. Vivamus vel justo in leo laoreet ullamcorper non vitae lorem. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum ullamcorper rutrum.'
+
+    history = [random.randint(0, 100) for i in range(n)]
+    dates = [datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)]
+
+    content = render_template('checkdetails.html',
+                        check=check,
+                        tables=tables,
+                        desc=desc,
                         colors=colors,
-                        history=history,
-                        history_length=len(history[0]),
-                        numvals=len(history))
+                        history=history)
     return content
 
 
