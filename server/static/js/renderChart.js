@@ -1,6 +1,6 @@
 function addGraphTo(location) {
     var chart = nv.models.lineChart()
-                .margin({left: 100})
+                .margin({left: 100, right:50})
                 //.useInteractiveGuideline(true)
                 .duration(350)
                 .showLegend(true)
@@ -8,8 +8,8 @@ function addGraphTo(location) {
                 .showYAxis(true);
 
     chart.xAxis
-            .axisLabel('Days Back')
-            .tickFormat(d3.format('02d'));
+            .axisLabel('Date')
+            .tickFormat(function(d) { return d3.time.format("%Y-%m-%d")(new Date(d)); });
 
     chart.yAxis
             .axisLabel('Violations')
