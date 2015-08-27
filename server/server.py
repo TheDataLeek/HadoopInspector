@@ -2,23 +2,17 @@
 
 import sys, os
 import json
-import pandas
-import datetime
+import sqlite3
+import numpy as np
+import random
 from flask import Flask, render_template, Markup
-import matplotlib.pyplot as plt
-import mpld3
 
 
 app = Flask(__name__)
+
 config = json.loads(open('../config/config.json').read())
 
-os.system('rm /tmp/inspector_demo.csv')
-os.system('python ../scripts/hadoopinspector_demogen.py --user-instance prod --user-db AssetUserEvents --dirname ../config /tmp/inspector_demo.csv')
-
-data = pandas.read_csv('/tmp/inspector_demo.csv',
-                        parse_dates=['run_start_timestamp', 'run_check_start_timestamp', 'run_check_end_timestamp'],
-                        date_parser=lambda d: datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S"))
-
+#TODO: Replace dummy data code with real data from database
 
 def main():
     app.run(host='localhost',
@@ -26,16 +20,18 @@ def main():
             debug=True)
 
 
-#TODO: Clean up aggregation code and bin
 @app.route('/')
 def root():
-    instances = data['instance_name'].unique()
-    rules, rimages = time_series_data('run_check_violation_cnt', 'instance_name', data)
-    checks, cimages = time_series_data('run_check_anomaly_score', 'instance_name', data)
+    names = ['dev', 'qa', 'prod']
+    passing = np.random.randint(0, 1, size=len(names))
+    numtests = np.random.randint(10, 10000, size=len(names))
+    history = [[random.randint(0, 10) for i in range(30)] for j in range(len(names))]
 
-    table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
+    data = []
+    for i in range(len(names)):
+        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
 
-    content = render_template('index.html', name='Hadoop Inspector', table=table)
+    content = render_template('index.html', name='Hadoop Inspector', data=data, history=history, history_length=len(history[0]), numvals=len(history))
     return content
 
 

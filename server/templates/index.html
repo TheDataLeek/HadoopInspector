@@ -1,22 +1,75 @@
 {% extends "layout.html" %}
 {% block body %}
+<h1>Instances</h1>
 <table class=reporttable>
     <tr>
         <td style="width:8%">Name</td>
-        <td style="width:12%">Rule Violations</td>
-        <td style="width:20%">7 Day Graph</td>
-        <td style="width:10%">Check Warnings</td>
-        <td style="width:8%">7 Day Graph</td>
+        <td style="width:12%">Status</td>
+        <td style="width:20%">Tests Run</td>
+        <td style="width:10%">Violations</td>
     </tr>
-    {% for row in table %}
+    {% for row in data %}
     <tr>
         <td style="width:8%"><a href="/inspect/{{ row[0] }}">{{ row[0] }}</a></td>
         <td style="width:12%">{{ row[1] }}</td>
         <td style="width:20%">{{ row[2] }}</td>
         <td style="width:10%">{{ row[3] }}</td>
-        <td style="width:8%">{{ row[4] }}</td>
-        <td>Generate Report</td>
     </tr>
     {% endfor %}
 </table>
+
+<div id="chart">
+    <svg></svg>
+</div>
+<!-- TODO: Add fallback code to link to local copy --> 
+<!--        See http://stackoverflow.com/questions/5257923/how-to-load-local-script-files-as-fallback-in-cases-where-cdn-are-blocked-unavai -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+<script src="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js">
+nv.addGraph(function() {
+    var chart = nv.models.lineChart()
+                .margin({left: 100})
+                .useInteractiveGuideline(true)
+                .transitionDuration(350)
+                .showLegend(true)
+                .showXAxis(true)
+                .showYAxis(true);
+
+    chart.xAxis
+            .axisLabel('Days Back')
+            .tickFormat(d3.format('02d'));
+
+    chart.yAxis
+            .axisLabel('Violations')
+            .tickFormat(d3.format('05d'));
+
+    var data = convertData();
+
+    d3.select('#chart svg')
+            .datum(data)
+            .call(chart);
+
+    nv.utils.windowResize( function() { chart.update() });
+    return chart;
+});
+
+function convertData() {
+{% for row in history %}
+    var {{ data[loop.index - 1][0] }} = [
+    {% for value in row %}
+        {x:{{loop.index}}, y:{{value}}} {% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for row in history %}
+        {
+            values: {{ data[loop.index - 1][0] }},
+            key: {{ data[loop.index - 1][0] }},
+            color: '#ff7f0e'
+        } {% if loop.index != numvals %},{% endif %}
+        {% endfor %}
+    ];
+};
+</script>
 {% endblock %}
