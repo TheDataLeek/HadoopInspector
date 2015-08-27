@@ -1,25 +1,66 @@
 {% extends "layout.html" %}
 {% block body %}
-<h1>Instances</h1>
-<table class=reporttable>
-    <tr>
-        <td style="width:8%">Name</td>
-        <td style="width:12%">Status</td>
-        <td style="width:20%">Tests Run</td>
-        <td style="width:10%">Violations</td>
-    </tr>
-    {% for row in data %}
-    <tr>
-        <td style="width:8%"><a href="/inspect/{{ row[0] }}">{{ row[0] }}</a></td>
-        <td style="width:12%">{% if row[1] == 1 %}Passing{% else %}Failing{% endif %}</td>
-        <td style="width:20%">{{ row[2] }}</td>
-        <td style="width:10%">{{ row[3] }}</td>
-    </tr>
-    {% endfor %}
-</table>
 
-<div id="chart">
-    <svg></svg>
+<div class="page-header">
+    <h1>Instances</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-10">
+        <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Tests Run</th>
+                <th>Violations</th>
+              </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ row[0] }}';">
+                            {{ row[0] }}
+                        </button>
+                    </td>
+                    <td>
+                        <h4>
+                        {% if row[1] == 1 %}
+                            <span class="label label-sucess">
+                                Passing
+                            </span>
+                        {% else %}
+                            <span class="label label-danger">
+                                Failing
+                            </span>
+                        {% endif %}
+                        </h4>
+                    </td>
+                    <td>{{ row[2] }}</td>
+                    <td>{{ row[3] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-10">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">History</h3>
+            </div>
+            <div class="panel-body">
+                <div id="chart" style="height:400px;">
+                    <svg></svg>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
