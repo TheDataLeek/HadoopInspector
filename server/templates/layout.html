@@ -7,26 +7,18 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Local Styling -->
-    <!--
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/style.css') }}">
-    -->
-
-    <!-- NVD3 Styling -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/nv.d3.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/bootstrap-theme.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/bootstrap-table.css') }}">
 
     <script src="{{ url_for('static', filename='js/d3.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/nv.d3.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/renderChart.js') }}"></script>
 
-    <!-- Bootstrap Styling -->
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
-
     <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-table.js') }}"></script>
 
     <title>Hadoop Inspector</title>
 </head>
@@ -58,8 +50,41 @@
             <h1>Hadoop Inspector</h1>
         </div>
 
-        {% block body %}
+        <div class="page-header">
+        {% block name %}
         {% endblock %}
+        </div>
+
+        {% block graph %}
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">History</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div id="chart" style="height:300px;">
+                            <svg></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+
+
+        <div class="row">
+            <div class="col-md-12">
+                <table data-toggle="table" {% if numvals > 4 %}data-height="400"{% endif %} data-sort-name="id" data-sort-order="asc">
+                    {% block table %}
+                    {% endblock %}
+                </table>
+            </div>
+        </div>
+
+        {% block js %}
+        {% endblock %}
+
     </div>
 </body>
 </html>

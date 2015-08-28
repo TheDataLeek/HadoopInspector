@@ -1,79 +1,59 @@
 {% extends "layout.html" %}
 
-{% block body %}
+{% block name %}
+<h1><a href="/">{{ instance }}</a>><a href="/inspect/{{ instance }}">{{ database }}</a>>Tables</h1>
+{% endblock %}
 
-<div class="page-header">
-    <h1><a href="/">{{ instance }}</a>><a href="/inspect/{{ instance }}">{{ database }}</a>>Tables</h1>
-</div>
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="name" data-align="left" data-sortable="true">Name</th>
+    <th data-field="starttime" data-align="left" data-sortable="true">Start Time</th>
+    <th data-field="stoptime" data-align="left" data-sortable="true">Stop Time</th>
+    <th data-field="status" data-align="left" data-sortable="true">Status</th>
+    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
+    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
+    <th data-field="comments" data-align="left" data-sortable="true">Comments</th>
+    <th data-field="mode" data-align="left" data-sortable="true">Mode</th>
+    <th data-field="partitions" data-align="left" data-sortable="true">Partitions</th>
+  </tr>
+</thead>
+<tbody>
+    {% for row in data %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ row[0] }}';">
+                {{ row[0] }}
+            </button>
+        </td>
+        <td>Just Then</td>
+        <td>Just Now</td>
+        <td>
+            <h4>
+            {% if row[1] == 1 %}
+                <span class="label label-sucess">
+                    Passing
+                </span>
+            {% else %}
+                <span class="label label-danger">
+                    Failing
+                </span>
+            {% endif %}
+            </h4>
+        </td>
+        <td>404</td>
+        <td>{{ row[2] }}</td>
+        <td>Lorem Ipsum</td>
+        <td>{{ row[3] }}</td>
+        <td>1</td>
+    </tr>
+    {% endfor %}
+</tbody>
+{% endblock %}
 
-<div class="row">
-    <div class="col-sm-12">
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h3 class="panel-title">History</h3>
-            </div>
-            <div class="panel-body">
-                <div id="chart" style="height:300px;">
-                    <svg></svg>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Start Time</th>
-                <th>Stop Time</th>
-                <th>Status</th>
-                <th>Return Code</th>
-                <th>Violations</th>
-                <th>Comments</th>
-                <th>Mode</th>
-                <th>Partitions</th>
-              </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>
-                        <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ row[0] }}';">
-                            {{ row[0] }}
-                        </button>
-                    </td>
-                    <td>Just Then</td>
-                    <td>Just Now</td>
-                    <td>
-                        <h4>
-                        {% if row[1] == 1 %}
-                            <span class="label label-sucess">
-                                Passing
-                            </span>
-                        {% else %}
-                            <span class="label label-danger">
-                                Failing
-                            </span>
-                        {% endif %}
-                        </h4>
-                    </td>
-                    <td>404</td>
-                    <td>{{ row[2] }}</td>
-                    <td>Lorem Ipsum</td>
-                    <td>{{ row[3] }}</td>
-                    <td>1</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
+{% block js %}
 <script>
 function convertData() {
 {% for row in history %}

@@ -1,12 +1,11 @@
 {% extends "layout.html" %}
 
-{% block body %}
-
-<div class="page-header">
+{% block name %}
     <h1>{{ check }}</h1>
     <p>{{ desc }}</p>
-</div>
+{% endblock %}
 
+{% block graph %}
 <div class="row">
     <div class="col-sm-8">
         <div class="panel panel-default">
@@ -21,11 +20,11 @@
         </div>
     </div>
     <div class="col-sm-4">
-        <table class="table table-bordered">
+        <table data-toggle="table" {% if numtables > 5 %}data-height="370"{% endif %} data-sort-name="id" data-sort-order="asc">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Table</th>
+                <th data-field="id" data-align="left" data-sortable="true">#</th>
+                <th data-field="table" data-align="left" data-sortable="true">Table</th>
               </tr>
             </thead>
             <tbody>
@@ -44,27 +43,25 @@
         </table>
     </div>
 </div>
+{% endblock %}
 
-<div class="row">
-    <div class="col-md-12">
-        <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Time</th>
-                <th>Mode</th>
-                <th>Partition</th>
-                <th>Return Code</th>
-                <th>Violations</th>
-                <th>Severity</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-</div>
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="time" data-align="left" data-sortable="true">Time</th>
+    <th data-field="mode" data-align="left" data-sortable="true">Mode</th>
+    <th data-field="partition" data-align="left" data-sortable="true">Partition</th>
+    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
+    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
+    <th data-field="severity" data-align="left" data-sortable="true">Severity</th>
+  </tr>
+</thead>
+<tbody>
+</tbody>
+{% endblock %}
 
+{% block js %}
 <script>
 function convertData() {
     var data = [

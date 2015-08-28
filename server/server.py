@@ -143,7 +143,9 @@ def checkdetails(check):
                         desc=desc,
                         colors=colors,
                         history=history,
-                        dates=dates)
+                        dates=dates,
+                        numvals=1,
+                        numtables=len(tables))
     return content
 
 
