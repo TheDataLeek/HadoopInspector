@@ -142,7 +142,8 @@ def checkdetails(check):
                         tables=tables,
                         desc=desc,
                         colors=colors,
-                        history=history)
+                        history=history,
+                        dates=dates)
     return content
 
 

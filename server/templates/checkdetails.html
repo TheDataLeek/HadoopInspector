@@ -32,7 +32,12 @@
                 {% for row in tables %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ row }}</td>
+                    <td>
+                        <!-- TODO: Fix this hyperlinking with real data -->
+                        <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/dev/users/{{ row }}';">
+                            {{ row }}
+                        </button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -64,7 +69,10 @@
 function convertData() {
     var data = [
     {% for value in history %}
-        {x:{{loop.index}}, y:{{value}}}{% if loop.index != history_length %},{% endif %}
+        {
+            x:new Date('{{dates[loop.index - 1]}}'),
+            y:{{value}}
+        }{% if loop.index != history_length %},{% endif %}
     {% endfor %}
     ];
 
