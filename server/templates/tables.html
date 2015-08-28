@@ -28,9 +28,14 @@
               <tr>
                 <th>#</th>
                 <th>Name</th>
+                <th>Start Time</th>
+                <th>Stop Time</th>
                 <th>Status</th>
-                <th>Tests Run</th>
+                <th>Return Code</th>
                 <th>Violations</th>
+                <th>Comments</th>
+                <th>Mode</th>
+                <th>Partitions</th>
               </tr>
             </thead>
             <tbody>
@@ -42,6 +47,8 @@
                             {{ row[0] }}
                         </button>
                     </td>
+                    <td>Just Then</td>
+                    <td>Just Now</td>
                     <td>
                         <h4>
                         {% if row[1] == 1 %}
@@ -55,8 +62,11 @@
                         {% endif %}
                         </h4>
                     </td>
+                    <td>404</td>
                     <td>{{ row[2] }}</td>
+                    <td>Lorem Ipsum</td>
                     <td>{{ row[3] }}</td>
+                    <td>1</td>
                 </tr>
                 {% endfor %}
             </tbody>
