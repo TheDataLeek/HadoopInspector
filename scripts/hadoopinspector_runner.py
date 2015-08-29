@@ -11,55 +11,80 @@ from pprint import pprint as pp
 from os.path import basename, isdir, isfile, exists
 from os.path import join as pjoin
 
+import hadoopinspector.core as core
+
+
 
 def main():
     args       = get_args()
     configure_logger(args.log_dir)
 
+    registry   = core.Registry()
+    registry.load_registry(args.registry_filename,
+                           args.instance, args.database, args.table, args.check)
     check_repo = CheckRepo(args.check_dir)
-    tester     = TestRunner(check_repo)
-    tester.run_checks_for_all_tables(args.table)
+    checker    = CheckRunner(registry, check_repo)
+    checker.run_checks_for_tables(args.table)
 
     if args.report:
-        for rec in tester.results.get_formatted_results():
+        for rec in checker.results.get_formatted_results():
             print(rec)
 
-    sys.exit(tester.results.get_max_rc())
+    sys.exit(checker.results.get_max_rc())
 
 
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--check-dir',
-                        help='Which directory to look for the tests in')
-    parser.add_argument('--log-dir',
-                        help='specifies directory to log output to')
+    parser.add_argument('--instance',
+                        required=True,
+                        help='specifies name of instance to check')
+    parser.add_argument('--database',
+                        required=True,
+                        help='specifies name of database to check')
     parser.add_argument('--table',
+                        required=False,
                         help='specifies a single table to test against')
     parser.add_argument('-r', '--report',
                         action='store_true',
                         default=False,
                         help='indicates that a report should be generated')
+    parser.add_argument('--registry-filename',
+                        help='registry file contains check config')
+    parser.add_argument('--check-dir',
+                        help='which directory to look for the tests in')
+    parser.add_argument('--log-dir',
+                        help='specifies directory to log output to')
+
     args = parser.parse_args()
+
     if not args.check_dir and not isdir(args.check_dir):
-        print('Supplied test directory does not exist. Setting to default')
-        args.testdir = './tests'
+        print('Supplied test directory does not exist. Please create.')
+        sys.exit(1)
+    if not isdir(args.log_dir):
+        print('Supplied log directory does not exist.  Please create.')
+        sys.exit(1)
+    if not isfile(args.registry_filename):
+        print('Supplied registry-filename does not exist.  Please correct.')
+        sys.exit(1)
+
     return args
 
 
 
-class TestRunner(object):
-    def __init__(self, check_repo):
+class CheckRunner(object):
+    def __init__(self, registry, check_repo):
         """ This is the general test runner class
 
         :param check_repo: CheckRepository object
         """
         self.repo     = check_repo
+        self.registry = registry
         self.results  = CheckResults()
 
 
-    def run_checks_for_all_tables(self, table):
+    def run_checks_for_tables(self, table):
         """
         Runs checks on all tables
 
@@ -91,15 +116,15 @@ class TestRunner(object):
 
 
 
-
 class CheckRepo(object):
 
-    def __init__(self, check_dir):
+    def __init__(self, check_dir, instance, database):
         self.check_dir = check_dir
         # check repo is constructed here
         # check_repo contains a dictionary of table names
         # each table name contains a dictionary of checks
         # each cehck contains a dictionary of info about that check and how to # run it
+        # todo: expand on this description
         self.repo      = {}
         for table in os.listdir(self.check_dir):
             self.repo[table] = self._get_table_checks(table)

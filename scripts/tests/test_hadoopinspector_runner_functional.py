@@ -30,6 +30,8 @@ class TestWithMockedCheckFiles(object):
 
     def run_cmd(self, table=None):
         cmd = [pgm,
+               '--instance', 'inst1',
+               '--database', 'db1',
                '--check-dir', self.check_dir,
                '--log-dir', self.log_dir,
                '--report' ]

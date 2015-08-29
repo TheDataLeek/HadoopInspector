@@ -1,7 +1,7 @@
 #!/usr/bin/env python34
 from __future__ import division
 import sys, os, shutil, stat
-import tempfile
+import tempfile, json
 import subprocess
 import collections
 from pprint import pprint as pp
@@ -18,6 +18,8 @@ sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import hadoopinspector_runner  as mod
 
 Record = collections.namedtuple('Record', 'table check check_rc violation_cnt')
+
+
 
 
 class TestCheckResults(object):
@@ -69,7 +71,7 @@ class TestCheckRepo(object):
         add_check(self.check_dir, 'customer')
         add_check(self.check_dir, 'customer')
         add_check(self.check_dir, 'asset')
-        self.repo = mod.CheckRepo(self.check_dir)
+        self.repo = mod.CheckRepo(self.check_dir, 'inst1', 'db1')
 
         assert sorted(self.repo.tables) == sorted(['customer', 'asset'])
         assert len(self.repo.repo['customer']) == 2
@@ -138,7 +140,6 @@ class EmptyRecError(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
-
 
 
 
