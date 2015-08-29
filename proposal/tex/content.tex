@@ -1,7 +1,23 @@
 \begin{abstract}
+As the complexity and number of data feeds grow, data quality emerges as one of the chief challenges.  Hadoop Inspector
+is a data quality and health analyzer intended to dramatically improve the quality and manageability of Hadoop
+environments.
+
+Hadoop Inspector can be scheduled to periodically scan an environment with user-supplied checks:  either violations of
+rules or warnings of anomalies - at the table and field level. Data Quality checks include: uniqueness, foreign key,
+format, or unknown value constraints.  Consistency checks include: row and spot-checking base table row counts against
+aggregate tables, peer tables in other clusters, or sources tables.   Policy checks include: existence, age, or table
+naming conventions.   The test runner is aggregate-aware so that checking can be performed incrementally and frequently.
+
+Both rule and warning violations can be viewed through a web interface to examine the current integrity of the cluster,
+as well as the historical integrity with time series graphs. The current state of the project exists primarily as a
+demonstration of the concept, providing a basis for the next steps of completing the test runner, user-check
+repositories, UI and packaged-set of reusable tests.
+
+Submitted on August 14, 2015 for the Cloudera Strata Competition.
 \end{abstract}
 
-\section{Background}
+\section{Motivation}
 Data quality problems have plagued analytical systems for twenty years: continually appearing in the top four reasons
 for project failure. In this space data quality problems loom large - a small defect that could be safely ignored or
 forgotten in the transactional world hamper queries and cause users to question our credibility for months.

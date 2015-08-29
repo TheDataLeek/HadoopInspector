@@ -2,22 +2,31 @@
 
 import sys, os
 import json
-import pandas
+import sqlite3
+import numpy as np
+import random
 import datetime
-from flask import Flask, render_template, Markup
-import matplotlib.pyplot as plt
-import mpld3
+from flask import Flask, render_template, Markup, request
 
 
 app = Flask(__name__)
+
 config = json.loads(open('../config/config.json').read())
 
-data = pandas.read_csv('/tmp/inspector_demo.csv',
-                        parse_dates=['run_start_timestamp', 'run_check_start_timestamp', 'run_check_end_timestamp'],
-                        date_parser=lambda d: datetime.datetime.strptime(d, "%Y-%m-%d %H:%M:%S"))
+# TODO: Make javascript not explode when it runs out of colors
+colors = [
+    '#5DA5DA', # (blue)
+    '#B276B2', # (purple)
+    '#60BD68', # (green)
+    '#F17CB0', # (pink)
+    '#B2912F', # (brown)
+    '#FAA43A', # (orange)
+    '#4D4D4D', # (gray)
+    '#DECF3F', # (yellow)
+    '#F15854'] # (red)
 
-os.system('python ../scripts/hadoopinspector_demogen.py --user-instance prod --user-db AssetUserEvents /tmp/inspector_demo.csv')
 
+#TODO: Replace dummy data code with real data from database
 
 def main():
     app.run(host='localhost',
@@ -25,85 +34,122 @@ def main():
             debug=True)
 
 
-#TODO: Clean up aggregation code and bin
 @app.route('/')
 def root():
-    instances = data['instance_name'].unique()
-    rules, rimages = time_series_data('run_check_violation_cnt', 'instance_name', data)
-    checks, cimages = time_series_data('run_check_anomaly_score', 'instance_name', data)
+    n = 10
+    names = ['dev', 'qa', 'prod']
+    passing = np.random.randint(0, 1, size=len(names))
+    numtests = np.random.randint(10, 10000, size=len(names))
+    dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
+    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
 
-    table = [[instances[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(instances))]
+    data = []
+    for i in range(len(names)):
+        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
 
-    content = render_template('index.html', name='Hadoop Inspector', table=table)
+    content = render_template('instances.html',
+                        data=data,
+                        colors=colors,
+                        history=history,
+                        dates=dates,
+                        history_length=len(history[0]),
+                        numvals=len(history))
     return content
-
-
-def time_series_data(timeserieskey, groupkey, dframe):
-    scoresum = [group[timeserieskey].sum() for key, group in dframe.groupby(groupkey)]
-    # Returns an array of pandas TimeSeries
-    history_raw = [pandas.Series(df[timeserieskey].values, index=df['run_start_timestamp'].values)
-                        for df in [group[['run_start_timestamp', timeserieskey]]
-                                   for key, group in dframe.groupby(groupkey)]]
-    # Resample each timeseries by minute
-    history = [hist.resample('M', how='count')[:10000] for hist in history_raw]
-    # Create each image
-    images = []
-    for hist in history:
-        fig = plt.figure(figsize=(6, 3))
-        ax = hist.plot()
-        ax.tick_params(
-            axis='both',
-            which='both',
-            labelbottom='on',
-            labelleft='off'
-        )
-        plt.title(timeserieskey)
-        images.append(Markup(mpld3.fig_to_html(fig)))
-    return scoresum, images
 
 
 @app.route('/inspect/<instance>')
 def instance(instance):
-    dframe = data.loc[data['instance_name'] == instance]
-    dbs = dframe['database_name'].unique()
+    n = 30
+    names = ['users', 'addresses', 'thisisaname']
+    passing = np.random.randint(0, 1, size=len(names))
+    numtests = np.random.randint(10, 10000, size=len(names))
+    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
 
-    rules, rimages = time_series_data('run_check_violation_cnt', 'database_name', dframe)
-    checks, cimages = time_series_data('run_check_anomaly_score', 'database_name', dframe)
+    data = []
+    for i in range(len(names)):
+        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
 
-    table = [[dbs[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(dbs))]
-
-    content = render_template('tabular.html',
-                              name=instance,
-                              table=table)
+    content = render_template('databases.html',
+                                instance=instance,
+                                colors=colors,
+                                data=data,
+                                history=history,
+                                history_length=len(history[0]),
+                                numvals=len(history))
     return content
 
 
-@app.route('/inspect/<instance>/<database>')
+@app.route('/inspect/<instance>/<database>', methods=['GET', 'POST'])
 def database(instance, database):
-    dframe = data.loc[(data['instance_name'] == instance) & (data['database_name'] == database)]
-    tables = dframe['table_name'].unique()
+    if request.method == 'POST':
+        new_comment = request.form['commenttext']
+        # Insert comment into database
+    n = 30
+    names = ['table1', 'table2', 'table3', 'table4', 'table5']
+    passing = np.random.randint(0, 1, size=len(names))
+    numtests = np.random.randint(10, 10000, size=len(names))
+    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
 
-    rules, rimages = time_series_data('run_check_violation_cnt', 'table_name', dframe)
-    checks, cimages = time_series_data('run_check_anomaly_score', 'table_name', dframe)
+    data = []
+    for i in range(len(names)):
+        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
 
-    table = [[tables[i], rules[i], rimages[i], checks[i], cimages[i]] for i in range(len(tables))]
-
-    content = render_template('tabular.html',
-                              name=instance + '/' + database,
-                              table=table)
+    content = render_template('tables.html',
+                                database=database,
+                                instance=instance,
+                                colors=colors,
+                                data=data,
+                                history=history,
+                                history_length=len(history[0]),
+                                numvals=len(history))
     return content
 
 
 @app.route('/inspect/<instance>/<database>/<table>')
 def table(instance, database, table):
-    dframe = data.loc[(data['instance_name'] == instance) &
-                      (data['database_name'] == database) &
-                      (data['table_name'] == table)]
-    content = render_template('details.html',
-                              instance=instance,
-                              database=database,
-                              table=table,
-                              dframe=dframe)
+    n = 30
+    names = list(['check{}'.format(i) for i in range(10)])
+    passing = np.random.randint(0, 1, size=len(names))
+    numtests = np.random.randint(10, 10000, size=len(names))
+    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
+
+    data = []
+    for i in range(len(names)):
+        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
+
+    content = render_template('checks.html',
+                                instance=instance,
+                                database=database,
+                                table=table,
+                                colors=colors,
+                                data=data,
+                                history=history,
+                                history_length=len(history[0]),
+                                numvals=len(history))
+    return content
+
+
+@app.route('/check/<check>')
+def checkdetails(check):
+    n = 30
+
+    tables = ['table1', 'table2', 'table3', 'table4', 'table5']
+    names = ['table1', 'table2', 'table3', 'table4', 'table5']
+
+    desc = 'Proin suscipit luctus orci placerat fringilla. Donec hendrerit laoreet risus eget adipiscing. Suspendisse in urna ligula, a volutpat mauris. Sed enim mi, bibendum eu pulvinar vel, sodales vitae dui. Pellentesque sed sapien lorem, at lacinia urna. In hac habitasse platea dictumst. Vivamus vel justo in leo laoreet ullamcorper non vitae lorem. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum ullamcorper rutrum.'
+
+    history = [random.randint(0, 100) for i in range(n)]
+    dates = [datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)]
+
+    content = render_template('checkdetails.html',
+                        check=check,
+                        tables=tables,
+                        desc=desc,
+                        colors=colors,
+                        history=history,
+                        dates=dates,
+                        numvals=1,
+                        numtables=len(tables))
     return content
 
 
