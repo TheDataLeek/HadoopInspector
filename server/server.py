@@ -34,10 +34,15 @@ def main():
             debug=True)
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def root():
-    n = 10
     names = ['dev', 'qa', 'prod']
+    if request.method == 'POST':
+        if request.form['searchquery'] == '':
+            names = ['dev', 'qa', 'prod']
+        else:
+            names = ['dev']
+    n = 10
     passing = np.random.randint(0, 1, size=len(names))
     numtests = np.random.randint(10, 10000, size=len(names))
     dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
@@ -57,13 +62,19 @@ def root():
     return content
 
 
-@app.route('/inspect/<instance>')
+@app.route('/inspect/<instance>', methods=['GET', 'POST'])
 def instance(instance):
-    n = 30
     names = ['users', 'addresses', 'thisisaname']
+    if request.method == 'POST':
+        if request.form['searchquery'] == '':
+            names = ['users', 'addresses', 'thisisaname']
+        else:
+            names = ['users']
+    n = 30
     passing = np.random.randint(0, 1, size=len(names))
     numtests = np.random.randint(10, 10000, size=len(names))
     history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
+    dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
 
     data = []
     for i in range(len(names)):
@@ -73,6 +84,7 @@ def instance(instance):
                                 instance=instance,
                                 colors=colors,
                                 data=data,
+                                dates=dates,
                                 history=history,
                                 history_length=len(history[0]),
                                 numvals=len(history))
@@ -81,13 +93,20 @@ def instance(instance):
 
 @app.route('/inspect/<instance>/<database>', methods=['GET', 'POST'])
 def database(instance, database):
-    if request.method == 'POST':
-        new_comment = request.form['commenttext']
-        # Insert comment into database
-    n = 30
     names = ['table1', 'table2', 'table3', 'table4', 'table5']
+    if request.method == 'POST':
+        formkeys = list(request.form.keys())
+        if 'savebutton' in formkeys:
+            new_comment = request.form['commenttext']
+        elif 'submitbutton' in formkeys:
+            if request.form['searchquery'] == '':
+                names = ['table1', 'table2', 'table3', 'table4', 'table5']
+            else:
+                names = ['table1', 'table2']
+    n = 30
     passing = np.random.randint(0, 1, size=len(names))
     numtests = np.random.randint(10, 10000, size=len(names))
+    dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
     history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
 
     data = []
@@ -100,18 +119,25 @@ def database(instance, database):
                                 colors=colors,
                                 data=data,
                                 history=history,
+                                dates=dates,
                                 history_length=len(history[0]),
                                 numvals=len(history))
     return content
 
 
-@app.route('/inspect/<instance>/<database>/<table>')
+@app.route('/inspect/<instance>/<database>/<table>', methods=['GET', 'POST'])
 def table(instance, database, table):
-    n = 30
     names = list(['check{}'.format(i) for i in range(10)])
+    if request.method == 'POST':
+        if request.form['searchquery'] == '':
+            names = list(['check{}'.format(i) for i in range(10)])
+        else:
+            names = list(['check{}'.format(i) for i in range(10)])[:2]
+    n = 30
     passing = np.random.randint(0, 1, size=len(names))
     numtests = np.random.randint(10, 10000, size=len(names))
     history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
+    dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
 
     data = []
     for i in range(len(names)):
@@ -123,14 +149,17 @@ def table(instance, database, table):
                                 table=table,
                                 colors=colors,
                                 data=data,
+                                dates=dates,
                                 history=history,
                                 history_length=len(history[0]),
                                 numvals=len(history))
     return content
 
 
-@app.route('/check/<check>')
-def checkdetails(check):
+@app.route('/inspect/<instance>/<database>/<table>/<check>', methods=['GET', 'POST'])
+def checkdetails(instance, database, table, check):
+    if request.method == 'POST':
+        pass
     n = 30
 
     tables = ['table1', 'table2', 'table3', 'table4', 'table5']
@@ -142,6 +171,9 @@ def checkdetails(check):
     dates = [datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)]
 
     content = render_template('checkdetails.html',
+                        instance=instance,
+                        database=database,
+                        table=table,
                         check=check,
                         tables=tables,
                         desc=desc,

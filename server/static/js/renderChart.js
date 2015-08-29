@@ -1,4 +1,4 @@
-function addGraphTo(location) {
+function addGraphTo(location, datafunc) {
     var chart = nv.models.lineChart()
                 .margin({left: 100, right:50})
                 //.useInteractiveGuideline(true)
@@ -15,13 +15,12 @@ function addGraphTo(location) {
             .axisLabel('Violations')
             .tickFormat(d3.format('02d'));
 
-    var data = convertData();
+    var data = datafunc();
 
     d3.select(location)
             .datum(data)
             .call(chart);
 
-    // Resize graph on window resize
     nv.utils.windowResize( function() { chart.update() });
 
     return chart;
