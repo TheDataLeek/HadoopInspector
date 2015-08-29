@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block name %}
+<h1>Instances</h1>
+{% endblock %}
+
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="name" data-align="left" data-sortable="true">Name</th>
+    <th data-field="status" data-align="left" data-sortable="true">Status</th>
+    <th data-field="testsrun" data-align="left" data-sortable="true">Tests Run</th>
+    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
+  </tr>
+</thead>
+<tbody>
+    {% for row in data %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ row[0] }}';">
+                {{ row[0] }}
+            </button>
+        </td>
+        <td>
+            <h4>
+            {% if row[1] == 1 %}
+                <span class="label label-sucess">
+                    Passing
+                </span>
+            {% else %}
+                <span class="label label-danger">
+                    Failing
+                </span>
+            {% endif %}
+            </h4>
+        </td>
+        <td>{{ row[2] }}</td>
+        <td>{{ row[3] }}</td>
+    </tr>
+    {% endfor %}
+</tbody>
+{% endblock %}
+
+{% block js %}
+<script>
+function convertData() {
+{% for row in history %}
+    {% set outerloop = loop.index %}
+    var {{ data[loop.index - 1][0] }} = [
+    {% for value in row %}
+        {
+            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
+            y:{{value}}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for row in history %}
+        {
+            values: {{ data[loop.index - 1][0] }},
+            key: '{{ data[loop.index - 1][0] }}',
+            color: '{{ colors[loop.index] }}'
+        } {% if loop.index != numvals %},{% endif %}
+        {% endfor %}
+    ];
+};
+
+nv.addGraph(addGraphTo('#chart svg'));
+</script>
+{% endblock %}

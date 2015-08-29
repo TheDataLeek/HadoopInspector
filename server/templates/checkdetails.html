@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+
+{% block name %}
+    <h1>{{ check }}</h1>
+    <p>{{ desc }}</p>
+{% endblock %}
+
+{% block graph %}
+<div class="row">
+    <div class="col-sm-8">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">History</h3>
+            </div>
+            <div class="panel-body">
+                <div id="chart" style="height:300px;">
+                    <svg></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Tables Affected</h3>
+            </div>
+            <div class="panel-body">
+                <table data-toggle="table" {% if numtables > 5 %}data-height="370"{% endif %} data-sort-name="id" data-sort-order="asc">
+                    <thead>
+                      <tr>
+                        <th data-field="id" data-align="left" data-sortable="true">#</th>
+                        <th data-field="table" data-align="left" data-sortable="true">Table</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in tables %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <!-- TODO: Fix this hyperlinking with real data -->
+                                <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/dev/users/{{ row }}';">
+                                    {{ row }}
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tabletitle %}
+<h4>Raw Run History</h4>
+{% endblock %}
+
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="time" data-align="left" data-sortable="true">Time</th>
+    <th data-field="mode" data-align="left" data-sortable="true">Mode</th>
+    <th data-field="partition" data-align="left" data-sortable="true">Partition</th>
+    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
+    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
+    <th data-field="severity" data-align="left" data-sortable="true">Severity</th>
+  </tr>
+</thead>
+<tbody>
+</tbody>
+{% endblock %}
+
+{% block js %}
+<script>
+function convertData() {
+    var data = [
+    {% for value in history %}
+        {
+            x:new Date('{{dates[loop.index - 1]}}'),
+            y:{{value}}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+
+    return [
+        {
+            values: data,
+            key: '{{ check }}',
+            color: '{{ colors[loop.index] }}'
+        }
+    ];
+};
+
+nv.addGraph(addGraphTo('#chart svg'));
+</script>
+{% endblock %}

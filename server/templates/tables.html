@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block name %}
+<h1><a href="/">{{ instance }}</a>><a href="/inspect/{{ instance }}">{{ database }}</a>>Tables</h1>
+{% endblock %}
+
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="name" data-align="left" data-sortable="true">Name</th>
+    <th data-field="starttime" data-align="left" data-sortable="true">Start Time</th>
+    <th data-field="stoptime" data-align="left" data-sortable="true">Stop Time</th>
+    <th data-field="status" data-align="left" data-sortable="true">Status</th>
+    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
+    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
+    <th data-field="comments" data-align="left" data-sortable="true">Comments</th>
+    <th data-field="mode" data-align="left" data-sortable="true">Mode</th>
+    <th data-field="partitions" data-align="left" data-sortable="true">Partitions</th>
+  </tr>
+</thead>
+<tbody>
+    {% for row in data %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ row[0] }}';">
+                {{ row[0] }}
+            </button>
+        </td>
+        <td>Just Then</td>
+        <td>Just Now</td>
+        <td>
+            <h4>
+            {% if row[1] == 1 %}
+                <span class="label label-sucess">
+                    Passing
+                </span>
+            {% else %}
+                <span class="label label-danger">
+                    Failing
+                </span>
+            {% endif %}
+            </h4>
+        </td>
+        <td>404</td>
+        <td>{{ row[2] }}</td>
+        <td>
+            <form id="commentform" name="commentform" method="post" role="form">
+                 <div class="form-group">
+                     <textarea class="form-control" rows="2" name="commenttext">Lorem Ipsum</textarea>
+                 </div>
+                 <button type="submit" value="Save" class="btn btn-default" name="savebutton" id="savebutton">Save</button>
+            </form>
+        </td>
+        <td>{{ row[3] }}</td>
+        <td>1</td>
+    </tr>
+    {% endfor %}
+</tbody>
+{% endblock %}
+
+{% block js %}
+<script>
+function convertData() {
+{% for row in history %}
+    var {{ data[loop.index - 1][0] }} = [
+    {% for value in row %}
+        {x:{{loop.index}}, y:{{value}}}{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for row in history %}
+        {
+            values: {{ data[loop.index - 1][0] }},
+            key: '{{ data[loop.index - 1][0] }}',
+            color: '{{ colors[loop.index] }}'
+        } {% if loop.index != numvals %},{% endif %}
+        {% endfor %}
+    ];
+};
+
+nv.addGraph(addGraphTo('#chart svg'));
+</script>
+{% endblock %}
