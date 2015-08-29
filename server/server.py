@@ -6,7 +6,7 @@ import sqlite3
 import numpy as np
 import random
 import datetime
-from flask import Flask, render_template, Markup
+from flask import Flask, render_template, Markup, request
 
 
 app = Flask(__name__)
@@ -79,8 +79,11 @@ def instance(instance):
     return content
 
 
-@app.route('/inspect/<instance>/<database>')
+@app.route('/inspect/<instance>/<database>', methods=['GET', 'POST'])
 def database(instance, database):
+    if request.method == 'POST':
+        new_comment = request.form['commenttext']
+        # Insert comment into database
     n = 30
     names = ['table1', 'table2', 'table3', 'table4', 'table5']
     passing = np.random.randint(0, 1, size=len(names))
@@ -124,6 +127,7 @@ def table(instance, database, table):
                                 history_length=len(history[0]),
                                 numvals=len(history))
     return content
+
 
 @app.route('/check/<check>')
 def checkdetails(check):

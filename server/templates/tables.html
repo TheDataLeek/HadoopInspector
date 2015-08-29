@@ -45,7 +45,14 @@
         </td>
         <td>404</td>
         <td>{{ row[2] }}</td>
-        <td>Lorem Ipsum</td>
+        <td>
+            <form id="commentform" name="commentform" method="post" role="form">
+                 <div class="form-group">
+                     <textarea class="form-control" rows="2" name="commenttext">Lorem Ipsum</textarea>
+                 </div>
+                 <button type="submit" value="Save" class="btn btn-default" name="savebutton" id="savebutton">Save</button>
+            </form>
+        </td>
         <td>{{ row[3] }}</td>
         <td>1</td>
     </tr>
