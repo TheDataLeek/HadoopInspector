@@ -14,9 +14,10 @@ import pytest
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 pgm         = os.path.join(script_path, 'hadoopinspector_runner.py')
 
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 
-import core as mod
+import hadoopinspector.core as mod
 
 Record = collections.namedtuple('Record', 'table check check_rc violation_cnt')
 
@@ -32,55 +33,136 @@ class TestRegistry(object):
 
 
     def test_creating_then_writing(self):
-        self.registry = mod.Registry()
-        self.registry.add_instance('prod1')
-        self.registry.add_db('prod1', 'AssetEvent')
-        self.registry.add_table('prod1', 'AssetEvent', 'asset')
-        self.registry.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg = mod.Registry()
+        reg.add_instance('prod1')
+        reg.add_db('prod1', 'AssetEvent')
+        reg.add_table('prod1', 'AssetEvent', 'asset')
+        reg.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
                check_mode='full',
                check_scope='row',
                check_tags=[])
-        self.registry.write(pjoin(self.temp_dir, 'registry.json'))
-        self.registry.validate_file(pjoin(self.temp_dir, 'registry.json'))
+        reg.write(pjoin(self.temp_dir, 'registry.json'))
+        reg.validate_file(pjoin(self.temp_dir, 'registry.json'))
         #with open(pjoin(self.temp_dir, 'registry.json')) as f:
         #    pp(f.read())
 
     def test_creating_then_loading(self):
-        self.registry = mod.Registry()
-        self.registry.add_instance('prod1')
-        self.registry.add_db('prod1', 'AssetEvent')
-        self.registry.add_table('prod1', 'AssetEvent', 'asset')
-        self.registry.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1 = mod.Registry()
+        reg1.add_instance('prod1')
+        reg1.add_db('prod1', 'AssetEvent')
+        reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
                check_mode='full',
                check_scope='row',
                check_tags=[])
-        self.registry.write(pjoin(self.temp_dir, 'registry.json'))
-        self.registry2 = mod.Registry()
-        self.registry2.load_registry(pjoin(self.temp_dir, 'registry.json'))
-        assert self.registry.registry == self.registry2.registry
+        reg1.write(pjoin(self.temp_dir, 'registry.json'))
+
+        reg2 = mod.Registry()
+        reg2.load_registry(pjoin(self.temp_dir, 'registry.json'))
+
+        assert reg1.full_registry == reg2.full_registry
+
+    def test_generating_db_registry(self):
+        reg1 = mod.Registry()
+        reg1.add_instance('prod1')
+        reg1.add_db('prod1', 'AssetEvent')
+        reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+               check_name='rule_uniqueness',
+               check_status='active',
+               check_type='rule',
+               check_mode='full',
+               check_scope='row',
+               check_tags=[])
+        reg1.generate_db_registry('prod1', 'AssetEvent')
+        assert 'check_name' in reg1.db_registry['prod1']['AssetEvent']['asset']['rule_pk1']
 
     def test_validation(self):
-        self.registry = mod.Registry()
-        self.registry.registry = 'foo'
-        self.registry.write(pjoin(self.temp_dir, 'registry.json'))
+        reg1 = mod.Registry()
+        with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
+            f.write('im an invalid data structure')
+
         with pytest.raises(SystemExit):
-            self.registry.validate_file(pjoin(self.temp_dir, 'registry.json'))
+            reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
 
 
 
 
-def add_check(check_dir, table, rc=0, out_count=0):
-    if not isdir(pjoin(check_dir, table)):
-        os.mkdir(pjoin(check_dir, table))
+class TestCheckRepo(object):
+
+    def setup_method(self, method):
+        self.check_dir = tempfile.mkdtemp(prefix='hadinsp_ckdir_')
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.check_dir)
+
+    def test_get_table_checks(self):
+        add_check(self.check_dir)
+        add_check(self.check_dir)
+        add_check(self.check_dir)
+        self.repo = mod.CheckRepo(self.check_dir)
+
+        assert len(self.repo.repo) == 3
+        for check in self.repo.repo:
+            assert isfile(self.repo.repo[check]['fqfn'])
+
+
+
+class TestCheckResults(object):
+
+    def setup_method(self, method):
+        self.inst  = 'inst1'
+        self.db    = 'db2'
+        self.check_results = mod.CheckResults()
+
+    def teardown_method(self, method):
+        pass
+
+    def add_2_checks_to_1_table(self, table, violations=0, rc=0):
+        self.check_results.add(self.inst, self.db, table, 'check_fk1', violations, rc)
+        self.check_results.add(self.inst, self.db, table, 'check_fk2', violations, rc)
+
+    def test_add(self):
+        self.add_2_checks_to_1_table('customer', 3, 0)
+        table_results = self.check_results.results[self.inst][self.db]['customer']
+        assert table_results['check_fk1']['rc'] == 0
+        assert table_results['check_fk1']['violation_cnt'] == 3
+        assert table_results['check_fk2']['rc'] == 0
+        assert table_results['check_fk2']['violation_cnt'] == 3
+
+    def test_add_str(self):
+        self.add_2_checks_to_1_table('customer', '3', '0')
+        table_results = self.check_results.results[self.inst][self.db]['customer']
+        assert table_results['check_fk1']['rc'] == '0'
+        assert table_results['check_fk1']['violation_cnt'] == '3'
+        assert table_results['check_fk2']['rc'] == '0'
+        assert table_results['check_fk2']['violation_cnt'] == '3'
+
+    def test_get_tables(self):
+        self.add_2_checks_to_1_table('customer')
+        self.check_results.results[self.inst][self.db].keys() == ['customer']
+        #assert self.check_results.get_tables() == ['customer']
+
+    def test_max_results(self):
+        self.add_2_checks_to_1_table('customer')
+        self.add_2_checks_to_1_table('asset', rc=4)
+        assert self.check_results.get_max_rc() == 4
+
+
+
+
+def add_check(check_dir, rc=0, out_count=0):
+    if not isdir(check_dir):
+        os.mkdir(check_dir)
 
     for check_id in range(1000):
-       fqfn = pjoin(check_dir, table, 'rule_%d.bash' % check_id)
+       fqfn = pjoin(check_dir, 'rule_%d.bash' % check_id)
        if not isfile(fqfn):
            break
 
@@ -91,14 +173,5 @@ def add_check(check_dir, table, rc=0, out_count=0):
         f.write(u'exit %s \n' % rc)
     st = os.stat(fqfn)
     os.chmod(fqfn, st.st_mode | stat.S_IEXEC)
-
-
-
-
-
-
-
-
-
 
 

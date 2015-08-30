@@ -5,10 +5,12 @@ import json
 from pprint import pprint as pp
 import validictory
 from os.path import isdir, isfile, exists
+from os.path import join as pjoin
 
 
 
 class Registry(object):
+
     """
     Sample Config File, with just a single check for a single table 
     for a single db for a single instance:
@@ -22,7 +24,7 @@ class Registry(object):
                         "check_tags":   [],
                         "check_mode":   "full",
                         "check_scope":  "row",
-                        "check_status": "active" 
+                        "check_status": "active"
                     }
                 }
             }
@@ -31,57 +33,98 @@ class Registry(object):
     """
 
     def __init__(self):
-        self.registry = {}
+        #sys.stdout.write("\nTest0-a")
+        #sys.__stdout__.write("\nTest0-b")
+        # lets not create the registries, make it more obvious that load & create funcs must be run.
+        self.full_registry  = {}
+        self.db_registry    = {} # filtered to just include checks needed for a run
 
-    def load_registry(self, fqfn, instance=None, db=None, table=None, check=None):
-        """ 
-        :param fqfn - str
-        :param instance - str, optional
-        :param db - str, optional
-        :param table - str, optional
-        :param check - str, optional
-           
+    def load_registry(self, fqfn):
+        """
+        :param fqfn     - str
+        :param instance - str
+        :param db       - str
+        :param table    - str, optional
+        :param check    - str, optional
+        """
         if not isfile(fqfn):
             abort("Invalid registry file: %s" % fqfn)
         with open(fqfn) as f:
-            self.registry = json.load(f)
-  
-        
+            self.full_registry = json.load(f)
 
-    def get_instance(self, instance):
-        return self.registry[instance]
+    def generate_db_registry(self, instance, db, table=None, check=None):
+        assert instance is not None
+        assert db is not None
 
-    def add_instance(self, instance):
-        self.registry[instance] = {}
+        if not self.full_registry:
+            raise EOFError("Registry is empty")
 
-    def get_db(self, instance, db):
-        return self.registry[instance][db]
+        # just in case provided instance & db aren't in registry:
+        if instance not in self.full_registry or db not in self.full_registry[instance]:
+            #pp("\n\nself.full_registry: ")
+            pp(self.full_registry)
+            raise EOFError("No registry found for instance (%s) & db (%s)" % (instance, db) )
 
-    def add_db(self, instance, db):
-        self.registry[instance] = {}
-        self.registry[instance][db] = {}
+        for full_table in self.full_registry[instance][db]:
+            if table is None or (table == full_table):
+                for full_check in self.full_registry[instance][db][full_table]:
+                    if check is None or (check == full_check):
+                        ck = self.full_registry[instance][db][full_table][full_check]
+                        self.add_check(instance, db, full_table, full_check, registry=self.db_registry, **ck)
 
-    def list_tables(self, instance, db):
-        return self.registry[instance][db].keys()
+        if len(self.db_registry.keys()) == 0:
+            raise EOFError("No registry found for instance & db")
 
-    def get_table(self, instance, db, table):
-        return self.registry[instance][db][table]
 
-    def add_table(self, instance, db, table):
-        self.registry[instance][db] = {}
-        self.registry[instance][db][table] = {}
+    def get_instance(self, instance, registry=None):
+        if registry is None:
 
-    def list_checks(self, instance, db, table):
-        return self.registry[instance][db][table].keys()
+            registry = self.full_registry
+        return registry[instance]
 
-    def get_check(self, instance, db, table, check):
-        return self.registry[instance][db][table][check]
+    def add_instance(self, instance, registry=None):
+        if registry is None:
+            registry = self.full_registry
+        registry[instance] = {}
+
+    def add_db(self, instance, db, registry=None):
+        if registry is None:
+            registry = self.full_registry
+        registry[instance][db] = {}
+
+    def list_tables(self, instance, db, registry=None):
+        if registry is None:
+            registry = self.full_registry
+        return registry[instance][db].keys()
+
+    def add_table(self, instance, db, table, registry=None):
+        if registry is None:
+            registry = self.full_registry
+        registry[instance][db][table] = {}
+
+    def list_checks(self, instance, db, table, registry=None):
+        if registry is None:
+            registry = self.full_registry
+        return registry[instance][db][table].keys()
 
     def add_check(self, instance, db, table, check, check_name, check_status, check_type,
-                  check_mode, check_scope, check_tags):
+                  check_mode, check_scope, check_tags, registry=None):
+        """ Adds a check structure to registry provided as arg
+        """
+        if registry is None:
+            registry = self.full_registry
+        assert isinstance(registry, dict)
 
-        self.registry[instance][db][table] = {}
-        self.registry[instance][db][table][check] = {
+        #--- add hierarchy parents:
+        if instance not in registry:
+            registry[instance] = {}
+        if db not in registry[instance]:
+            registry[instance][db] = {}
+        if table not in registry[instance][db]:
+            registry[instance][db][table] = {}
+
+        #--- finally, add check:
+        registry[instance][db][table][check] = {
                'check_name':    check_name,
                'check_status':  check_status,
                'check_type':    check_type,
@@ -89,19 +132,26 @@ class Registry(object):
                'check_scope':   check_scope,
                'check_tags':    []  }
 
-    def write(self, filename=None):
+    def write(self, filename=None, registry=None):
+        if registry is None:
+            registry = self.full_registry
         if not filename:
             filename = 'registry.json'
         with open(filename, 'w') as outfile:
-            json.dump(self.registry, outfile)
+            json.dump(registry, outfile)
+        assert isfile(filename)
+        return filename
 
     def validate_file(self, filename):
 
         if not isfile(filename):
             return ValueError, 'Invalid file: %s' % filename
 
-        with open(filename) as infile:
-            reg = json.load(infile)
+        try:
+            with open(filename) as infile:
+                reg = json.load(infile)
+        except ValueError:
+            abort("Invalid json file")
         self.validate(reg)
 
     def validate(self, registry):
@@ -132,6 +182,7 @@ class Registry(object):
             except:
                 abort("Error encountered while processing Registry")
 
+        pp(registry)
         if not isinstance(registry, dict):
             abort(msg="Invalid registry")
         for instance in registry:
@@ -147,9 +198,84 @@ class Registry(object):
                         validate_check(registry[instance][db][table][check])
 
 
+
+class CheckRepo(object):
+
+    def __init__(self, check_dir):
+        self.check_dir = check_dir
+        # check repo is constructed here
+        # check_repo contains a dictionary of table names
+        # each table name contains a dictionary of checks
+        # each cehck contains a dictionary of info about that check and how to # run it
+        # todo: expand on this description
+        self.repo      = {}
+        for check_fn in os.listdir(self.check_dir):
+            self.repo[check_fn] = {}
+            self.repo[check_fn]['fqfn'] = pjoin(self.check_dir, check_fn)
+
+
+
+class CheckResults(object):
+
+    def __init__(self):
+        self.results = {}
+
+    def add(self, instance, database, table, check, violations, rc, check_status=None):
+        assert isnumeric(rc)
+        assert isnumeric(violations)
+        assert check_status in (None, 'active', 'inactive')
+
+        if instance not in self.results:
+            self.results[instance] = {}
+        if database not in self.results[instance]:
+            self.results[instance][database] = {}
+        if table not in self.results[instance][database]:
+            self.results[instance][database][table] = {}
+        if check not in self.results[instance][database][table]:
+            self.results[instance][database][table][check] = {}
+
+        self.results[instance][database][table][check]['violation_cnt'] = violations
+        self.results[instance][database][table][check]['rc'] = rc
+
+    def get_max_rc(self):
+        max_rc = 0
+        for instance in self.results:
+            for database in self.results[instance]:
+                for table in self.results[instance][database]:
+                    for check in self.results[instance][database][table]:
+                        if self.results[instance][database][table][check]['rc'] > max_rc:
+                            max_rc = self.results[instance][database][table][check]['rc']
+        return max_rc
+
+    def get_formatted_results(self):
+        formatted_results = []
+        for instance in self.results:
+            for database in self.results[instance]:
+                for table in self.results[instance][database]:
+                        for check in self.results[instance][database][table]:
+                                rec = '%s|%s|%s|%s|%s|%s' % (instance, database, table, check,
+                                           self.results[instance][database][table][check]['rc'],
+                                           self.results[instance][database][table][check]['violation_cnt'])
+                                formatted_results.append(rec)
+        return formatted_results
+
+
+
 def abort(msg=""):
     print(msg)
     sys.exit(1)
+
+def isnumeric(val):
+    try:
+        int(val)
+    except TypeError:
+        return False
+    except ValueError:
+        return False
+    else:
+        return True
+
+
 
 
 
