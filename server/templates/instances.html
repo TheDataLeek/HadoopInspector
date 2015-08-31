@@ -8,7 +8,7 @@
 <thead>
   <tr>
     <th data-field="id" data-align="left" data-sortable="true">#</th>
-    <th data-field="name" data-align="left" data-sortable="true">Name</th>
+    <th data-field="name" data-align="left" data-sortable="true">Instance Name</th>
     <th data-field="status" data-align="left" data-sortable="true">Status</th>
     <th data-field="testsrun" data-align="left" data-sortable="true">Tests Run</th>
     <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
@@ -45,7 +45,7 @@
 
 {% block js %}
 <script>
-function convertData() {
+function convertDataDay() {
 {% for row in history %}
     {% set outerloop = loop.index %}
     var {{ data[loop.index - 1][0] }} = [
@@ -68,7 +68,74 @@ function convertData() {
         {% endfor %}
     ];
 };
+function convertDataWeek() {
+{% for row in history %}
+    {% set outerloop = loop.index %}
+    var {{ data[loop.index - 1][0] }} = [
+    {% for value in row %}
+        {
+            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
+            y:{{ 2 *value }}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
 
-nv.addGraph(addGraphTo('#chart svg'));
+    return [
+        {% for row in history %}
+        {
+            values: {{ data[loop.index - 1][0] }},
+            key: '{{ data[loop.index - 1][0] }}',
+            color: '{{ colors[loop.index] }}'
+        } {% if loop.index != numvals %},{% endif %}
+        {% endfor %}
+    ];
+};
+function convertDataMonth() {
+{% for row in history %}
+    {% set outerloop = loop.index %}
+    var {{ data[loop.index - 1][0] }} = [
+    {% for value in row %}
+        {
+            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
+            y:{{ 3 * value }}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for row in history %}
+        {
+            values: {{ data[loop.index - 1][0] }},
+            key: '{{ data[loop.index - 1][0] }}',
+            color: '{{ colors[loop.index] }}'
+        } {% if loop.index != numvals %},{% endif %}
+        {% endfor %}
+    ];
+};
+function convertDataYear() {
+{% for row in history %}
+    {% set outerloop = loop.index %}
+    var {{ data[loop.index - 1][0] }} = [
+    {% for value in row %}
+        {
+            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
+            y:{{ 4 * value }}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for row in history %}
+        {
+            values: {{ data[loop.index - 1][0] }},
+            key: '{{ data[loop.index - 1][0] }}',
+            color: '{{ colors[loop.index] }}'
+        } {% if loop.index != numvals %},{% endif %}
+        {% endfor %}
+    ];
+};
 </script>
 {% endblock %}

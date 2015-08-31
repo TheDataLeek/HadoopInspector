@@ -1,7 +1,12 @@
 {% extends "layout.html" %}
 
 {% block name %}
-    <h1>{{ check }}</h1>
+    <h1><a href="/">{{ instance }}</a>>
+        <a href="/inspect/{{ instance }}">{{ database }}</a>>
+        <a href="/inspect/{{ instance }}/{{ database}}">{{ table }}</a>>
+        <a href="/inspect/{{ instance }}/{{ database}}/{{ table }}">{{ check }}</a>>
+        Details
+    </h1>
     <p>{{ desc }}</p>
 {% endblock %}
 
@@ -13,8 +18,36 @@
                 <h3 class="panel-title">History</h3>
             </div>
             <div class="panel-body">
-                <div id="chart" style="height:300px;">
-                    <svg></svg>
+                <div id="chart">
+                    <ul class="nav nav-tabs" role="tablist">
+                      <li role="presentation" class="active">
+                          <a href="#day" aria-controls="day" role="tab" data-toggle="tab" id="dayButton">Day</a>
+                      </li>
+                      <li role="presentation">
+                          <a href="#week" aria-controls="week" role="tab" data-toggle="tab" id="weekButton">Week</a>
+                      </li>
+                      <li role="presentation">
+                          <a href="#month" aria-controls="month" role="tab" data-toggle="tab" id="monthButton">Month</a>
+                      </li>
+                      <li role="presentation">
+                          <a href="#year" aria-controls="year" role="tab" data-toggle="tab" id="yearButton">Year</a>
+                      </li>
+                    </ul>
+                    <!-- Tab panes -->
+                    <div class="tab-content">
+                      <div role="tabpanel" class="tab-pane active" id="day">
+                          <svg style="height:300px"></svg>
+                      </div>
+                      <div role="tabpanel" class="tab-pane" id="week">
+                          <svg style="height:300px"></svg>
+                      </div>
+                      <div role="tabpanel" class="tab-pane" id="month">
+                          <svg style="height:300px;"></svg>
+                      </div>
+                      <div role="tabpanel" class="tab-pane" id="year">
+                          <svg style="height:300px;"></svg>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,7 +107,7 @@
 
 {% block js %}
 <script>
-function convertData() {
+function convertDataDay() {
     var data = [
     {% for value in history %}
         {
@@ -87,12 +120,64 @@ function convertData() {
     return [
         {
             values: data,
-            key: '{{ check }}',
-            color: '{{ colors[loop.index] }}'
+            key: 'check',
+            color: '{{ colors[loop.index - 1] }}'
         }
     ];
 };
+function convertDataWeek() {
+    var data = [
+    {% for value in history %}
+        {
+            x:new Date('{{dates[loop.index - 1]}}'),
+            y:{{2 * value}}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
 
-nv.addGraph(addGraphTo('#chart svg'));
+    return [
+        {
+            values: data,
+            key: 'check',
+            color: '{{ colors[loop.index - 1] }}'
+        }
+    ];
+};
+function convertDataMonth() {
+    var data = [
+    {% for value in history %}
+        {
+            x:new Date('{{dates[loop.index - 1]}}'),
+            y:{{3 * value}}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+
+    return [
+        {
+            values: data,
+            key: 'check',
+            color: '{{ colors[loop.index - 1] }}'
+        }
+    ];
+};
+function convertDataYear() {
+    var data = [
+    {% for value in history %}
+        {
+            x:new Date('{{dates[loop.index - 1]}}'),
+            y:{{4 * value}}
+        }{% if loop.index != history_length %},{% endif %}
+    {% endfor %}
+    ];
+
+    return [
+        {
+            values: data,
+            key: 'check',
+            color: '{{ colors[loop.index - 1] }}'
+        }
+    ];
+};
 </script>
 {% endblock %}
