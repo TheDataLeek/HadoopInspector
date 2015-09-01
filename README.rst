@@ -73,3 +73,25 @@ as the data is not rejected).
 
 References: - https://en.wikipedia.org/wiki/Levenshtein\_distance -
 https://en.wikipedia.org/wiki/Moving\_average#Weighted\_moving\_average
+
+Installation
+------------
+
+-  ideally create a dedicated virtualenv
+-  pip install hadoopinspector
+
+Development
+-----------
+
+-  py.test within a virtualenv for python3.4 needs a little help - so
+   run it with:
+
+   -  $ python3 -m py.test
+
+-  to simplify this with tox, create a packaged file of tests:
+
+   -  $ python3 -m py.test --genscript=runtests.py
+   -  $ chmod +x runtests.py
+   -  $ cp runtests.py ../bin
+   -  from there it's referenced by tox.ini, and will get run when you
+      run tox
