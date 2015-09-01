@@ -14,26 +14,24 @@
     <th data-field="status" data-align="left" data-sortable="true">Status</th>
     <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
     <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
-    <th data-field="comments" data-align="left" data-sortable="true">Comments</th>
-    <th data-field="mode" data-align="left" data-sortable="true">Mode</th>
     <th data-field="partitions" data-align="left" data-sortable="true">Partitions</th>
   </tr>
 </thead>
 <tbody>
-    {% for row in data %}
+    {% for name in names %}
     <tr>
         <td>{{ loop.index }}</td>
         <td>
-            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ row[0] }}';">
-                {{ row[0] }}
+            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ name }}';">
+                {{ name }}
             </button>
         </td>
         <td>Just Then</td>
         <td>Just Now</td>
         <td>
             <h4>
-            {% if row[1] == 1 %}
-                <span class="label label-sucess">
+            {% if metadata[name]['passing'] == 0 %}
+                <span class="label label-success">
                     Passing
                 </span>
             {% else %}
@@ -44,16 +42,7 @@
             </h4>
         </td>
         <td>404</td>
-        <td>{{ row[2] }}</td>
-        <td>
-            <form id="commentform" name="commentform" method="post" role="form">
-                 <div class="form-group">
-                     <textarea class="form-control" rows="2" name="commenttext">Lorem Ipsum</textarea>
-                 </div>
-                 <button type="submit" value="Save" class="btn btn-default" name="savebutton" id="savebutton">Save</button>
-            </form>
-        </td>
-        <td>{{ row[3] }}</td>
+        <td>{{ metadata[name]['passing'] }}</td>
         <td>1</td>
     </tr>
     {% endfor %}
@@ -62,95 +51,69 @@
 
 {% block js %}
 <script>
-function convertDataDay() {
-{% for row in history %}
-    {% set outerloop = loop.index %}
-    var {{ data[loop.index - 1][0] }} = [
-    {% for value in row %}
-        {
-            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
-            y:{{value}}
-        }{% if loop.index != history_length %},{% endif %}
-    {% endfor %}
-    ];
-{% endfor %}
-
-    return [
-        {% for row in history %}
-        {
-            values: {{ data[loop.index - 1][0] }},
-            key: '{{ data[loop.index - 1][0] }}',
-            color: '{{ colors[loop.index] }}'
-        } {% if loop.index != numvals %},{% endif %}
-        {% endfor %}
-    ];
-};
 function convertDataWeek() {
-{% for row in history %}
-    {% set outerloop = loop.index %}
-    var {{ data[loop.index - 1][0] }} = [
-    {% for value in row %}
+{% for name in names %}
+    var {{ name }} = [
+    {% for row in history[name]['week'] %}
         {
-            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
-            y:{{ 2 *value }}
-        }{% if loop.index != history_length %},{% endif %}
+            x:new Date('{{ row[0] }}'),
+            y:{{ row[1] }}
+        }{% if loop.index != metadata[name]['weeklen'] %},{% endif %}
     {% endfor %}
     ];
 {% endfor %}
 
     return [
-        {% for row in history %}
+        {% for name in names %}
         {
-            values: {{ data[loop.index - 1][0] }},
-            key: '{{ data[loop.index - 1][0] }}',
-            color: '{{ colors[loop.index] }}'
-        } {% if loop.index != numvals %},{% endif %}
+            values: {{ name }},
+            key: '{{ name }}',
+            color: '{{ colors[loop.index % 9] }}'
+        } {% if loop.index != names|length %},{% endif %}
         {% endfor %}
     ];
 };
 function convertDataMonth() {
-{% for row in history %}
-    {% set outerloop = loop.index %}
-    var {{ data[loop.index - 1][0] }} = [
-    {% for value in row %}
+{% for name in names %}
+    var {{ name }} = [
+    {% for row in history[name]['month'] %}
         {
-            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
-            y:{{ 3 * value }}
-        }{% if loop.index != history_length %},{% endif %}
+            x:new Date('{{ row[0] }}'),
+            y:{{ row[1] }}
+        }{% if loop.index != metadata[name]['monthlen'] %},{% endif %}
     {% endfor %}
     ];
 {% endfor %}
 
     return [
-        {% for row in history %}
+        {% for name in names %}
         {
-            values: {{ data[loop.index - 1][0] }},
-            key: '{{ data[loop.index - 1][0] }}',
-            color: '{{ colors[loop.index] }}'
-        } {% if loop.index != numvals %},{% endif %}
+            values: {{ name }},
+            key: '{{ name }}',
+            color: '{{ colors[loop.index % 9] }}'
+        } {% if loop.index != names|length %},{% endif %}
         {% endfor %}
     ];
 };
 function convertDataYear() {
-{% for row in history %}
-    {% set outerloop = loop.index %}
-    var {{ data[loop.index - 1][0] }} = [
-    {% for value in row %}
+{% for name in names %}
+    var {{ name }} = [
+    {% for row in history[name]['year'] %}
         {
-            x:new Date('{{dates[outerloop - 1][loop.index - 1]}}'),
-            y:{{ 4 * value }}
-        }{% if loop.index != history_length %},{% endif %}
+            x:new Date('{{ row[0] }}'),
+            y:{{ row[1] }}
+        }{% if loop.index != metadata[name]['yearlen'] %},{% endif %}
     {% endfor %}
     ];
 {% endfor %}
 
     return [
-        {% for row in history %}
+        {% for name in names %}
         {
-            values: {{ data[loop.index - 1][0] }},
-            key: '{{ data[loop.index - 1][0] }}',
-            color: '{{ colors[loop.index] }}'
-        } {% if loop.index != numvals %},{% endif %}
+            values: {{ name }},
+            key: '{{ name }}',
+            color: '{{ colors[loop.index % 9] }}'
+        } {% if loop.index != names|length %},{% endif %}
         {% endfor %}
     ];
 };

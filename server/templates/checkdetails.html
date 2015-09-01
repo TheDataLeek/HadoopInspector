@@ -21,9 +21,6 @@
                 <div id="chart">
                     <ul class="nav nav-tabs" role="tablist">
                       <li role="presentation" class="active">
-                          <a href="#day" aria-controls="day" role="tab" data-toggle="tab" id="dayButton">Day</a>
-                      </li>
-                      <li role="presentation">
                           <a href="#week" aria-controls="week" role="tab" data-toggle="tab" id="weekButton">Week</a>
                       </li>
                       <li role="presentation">
@@ -35,10 +32,7 @@
                     </ul>
                     <!-- Tab panes -->
                     <div class="tab-content">
-                      <div role="tabpanel" class="tab-pane active" id="day">
-                          <svg style="height:300px"></svg>
-                      </div>
-                      <div role="tabpanel" class="tab-pane" id="week">
+                      <div role="tabpanel" class="tab-pane active" id="week">
                           <svg style="height:300px"></svg>
                       </div>
                       <div role="tabpanel" class="tab-pane" id="month">
@@ -58,7 +52,7 @@
                 <h3 class="panel-title">Tables Affected</h3>
             </div>
             <div class="panel-body">
-                <table data-toggle="table" {% if numtables > 5 %}data-height="370"{% endif %} data-sort-name="id" data-sort-order="asc">
+                <table data-toggle="table" {% if tables|length > 5 %}data-height="370"{% endif %} data-sort-name="id" data-sort-order="asc">
                     <thead>
                       <tr>
                         <th data-field="id" data-align="left" data-sortable="true">#</th>
@@ -66,13 +60,12 @@
                       </tr>
                     </thead>
                     <tbody>
-                        {% for row in tables %}
+                        {% for table in tables %}
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>
-                                <!-- TODO: Fix this hyperlinking with real data -->
-                                <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/dev/users/{{ row }}';">
-                                    {{ row }}
+                                <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ table }}';">
+                                    {{ table }}
                                 </button>
                             </td>
                         </tr>
@@ -93,89 +86,97 @@
 <thead>
   <tr>
     <th data-field="id" data-align="left" data-sortable="true">#</th>
-    <th data-field="time" data-align="left" data-sortable="true">Time</th>
-    <th data-field="mode" data-align="left" data-sortable="true">Mode</th>
-    <th data-field="partition" data-align="left" data-sortable="true">Partition</th>
-    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
-    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
-    <th data-field="severity" data-align="left" data-sortable="true">Severity</th>
+    <th data-field="check_name" data-align="left" data-sortable="true">Check Name</th>
+    <th data-field="check_type" data-align="left" data-sortable="true">Check Type</th>
+    <th data-field="check_policy_type" data-align="left" data-sortable="true">Check Policy Type</th>
+    <th data-field="check_mode" data-align="left" data-sortable="true">Check Mode</th>
+    <th data-field="check_unit" data-align="left" data-sortable="true">Check Unit</th>
+    <th data-field="check_status" data-align="left" data-sortable="true">Check Status</th>
+    <th data-field="run_start_timestamp" data-align="left" data-sortable="true">Start Time</th>
+    <th data-field="run_stop_timestamp" data-align="left" data-sortable="true">Stop Time</th>
+    <th data-field="check_rc" data-align="left" data-sortable="true">Check Return Code</th>
+    <th data-field="check_scope" data-align="left" data-sortable="true">Check Scope</th>
+    <th data-field="check_severity_score" data-align="left" data-sortable="true">Check Severity Score</th>
+    <th data-field="check_violation_cnt" data-align="left" data-sortable="true">Check Violation Count</th>
   </tr>
 </thead>
 <tbody>
+{% for row in raw_history %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ row[3] }}</td>
+        <td>{{ row[4] }}</td>
+        <td>{{ row[5] }}</td>
+        <td>{{ row[6] }}</td>
+        <td>{{ row[7] }}</td>
+        <td>{{ row[8] }}</td>
+        <td>{{ row[9] }}</td>
+        <td>{{ row[10] }}</td>
+        <td>{{ row[11] }}</td>
+        <td>{{ row[12] }}</td>
+        <td>{{ row[13] }}</td>
+        <td>{{ row[14] }}</td>
+    </tr>
+{% endfor %}
 </tbody>
+{% endblock %}
+
+{% block tablefoot %}
 {% endblock %}
 
 {% block js %}
 <script>
-function convertDataDay() {
-    var data = [
-    {% for value in history %}
-        {
-            x:new Date('{{dates[loop.index - 1]}}'),
-            y:{{value}}
-        }{% if loop.index != history_length %},{% endif %}
-    {% endfor %}
-    ];
-
-    return [
-        {
-            values: data,
-            key: 'check',
-            color: '{{ colors[loop.index - 1] }}'
-        }
-    ];
-};
 function convertDataWeek() {
     var data = [
-    {% for value in history %}
+    {% for value in history['week'] %}
         {
-            x:new Date('{{dates[loop.index - 1]}}'),
-            y:{{2 * value}}
-        }{% if loop.index != history_length %},{% endif %}
+            x:new Date('{{ value[0] }}'),
+            y:{{ value[1] }}
+        }{% if loop.index != history['week']|length %},{% endif %}
     {% endfor %}
     ];
 
     return [
         {
             values: data,
-            key: 'check',
-            color: '{{ colors[loop.index - 1] }}'
+            key: '{{ check }}',
+            color: '{{ colors[(loop.index - 1) % 9] }}'
         }
     ];
 };
 function convertDataMonth() {
     var data = [
-    {% for value in history %}
+    {% for value in history['month'] %}
         {
-            x:new Date('{{dates[loop.index - 1]}}'),
-            y:{{3 * value}}
-        }{% if loop.index != history_length %},{% endif %}
+            x:new Date('{{ value[0] }}'),
+            y:{{ value[1] }}
+        }{% if loop.index != history['month']|length %},{% endif %}
     {% endfor %}
     ];
 
     return [
         {
             values: data,
-            key: 'check',
-            color: '{{ colors[loop.index - 1] }}'
+            key: '{{ check }}',
+            color: '{{ colors[(loop.index - 1) % 9] }}'
         }
     ];
 };
 function convertDataYear() {
     var data = [
-    {% for value in history %}
+    {% for value in history['year'] %}
         {
-            x:new Date('{{dates[loop.index - 1]}}'),
-            y:{{4 * value}}
-        }{% if loop.index != history_length %},{% endif %}
+            x:new Date('{{ value[0] }}'),
+            y:{{ value[1] }}
+        }{% if loop.index != history['year']|length %},{% endif %}
     {% endfor %}
     ];
 
     return [
         {
             values: data,
-            key: 'check',
-            color: '{{ colors[loop.index - 1] }}'
+            key: '{{ check }}',
+            color: '{{ colors[(loop.index - 1) % 9] }}'
         }
     ];
 };

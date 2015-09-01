@@ -64,9 +64,6 @@
                         <div id="chart">
                             <ul class="nav nav-tabs" role="tablist">
                               <li role="presentation" class="active">
-                                  <a href="#day" aria-controls="day" role="tab" data-toggle="tab" id="dayButton">Day</a>
-                              </li>
-                              <li role="presentation">
                                   <a href="#week" aria-controls="week" role="tab" data-toggle="tab" id="weekButton">Week</a>
                               </li>
                               <li role="presentation">
@@ -78,10 +75,7 @@
                             </ul>
                             <!-- Tab panes -->
                             <div class="tab-content">
-                              <div role="tabpanel" class="tab-pane active" id="day">
-                                  <svg style="height:300px"></svg>
-                              </div>
-                              <div role="tabpanel" class="tab-pane" id="week">
+                              <div role="tabpanel" class="tab-pane active" id="week">
                                   <svg style="height:300px"></svg>
                               </div>
                               <div role="tabpanel" class="tab-pane" id="month">
@@ -103,7 +97,7 @@
 
         <div class="row">
             <div class="col-md-12">
-                <table data-toggle="table" {% if numvals > 5 %}data-height="400"{% endif %} data-sort-name="id" data-sort-order="asc">
+                <table data-toggle="table" {% if (names|length > 5) or (raw_history|length > 5) %}data-height="400"{% endif %} data-sort-name="id" data-sort-order="asc">
                     {% block table %}
                     {% endblock %}
                 </table>
@@ -126,20 +120,14 @@
         {% endblock %}
 
         <script>
-            var dayChart = addGraphTo('#day svg', convertDataDay);
             var weekChart = addGraphTo('#week svg', convertDataWeek);
             var monthChart = addGraphTo('#month svg', convertDataMonth);
             var yearChart = addGraphTo('#year svg', convertDataYear);
 
-            nv.addGraph(dayChart);
             nv.addGraph(weekChart);
             nv.addGraph(monthChart);
             nv.addGraph(yearChart);
 
-            $("#dayButton").click(function() {
-                dayChart.width(document.getElementById("chart").offsetWidth);
-                dayChart.update();
-            });
             $("#weekButton").click(function() {
                 weekChart.width(document.getElementById("chart").offsetWidth);
                 weekChart.update();
