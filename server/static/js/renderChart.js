@@ -7,9 +7,10 @@ function addGraphTo(location, datafunc) {
                 .showXAxis(true)
                 .showYAxis(true);
 
+    var format = d3.time.format("%Y-%m-%d");
     chart.xAxis
             .axisLabel('Date')
-            .tickFormat(function(d) { return d3.time.format("%Y-%m-%d")(new Date(d)); });
+            .tickFormat(function(d) { return format(new Date(d)); });
 
     chart.yAxis
             .axisLabel('Violations')

@@ -11,6 +11,7 @@ from flask import Flask, render_template, Markup, request
 
 app = Flask(__name__)
 
+#TODO: Actually use config and determine configurable fields
 config = json.loads(open('../config/config.json').read())
 
 # TODO: Make javascript not explode when it runs out of colors
@@ -34,31 +35,79 @@ def main():
             debug=True)
 
 
+#TODO: Make this function more configurable
+#TODO: Test this function!
+def submit_query(query_string, args=None, flat=False):
+    #TODO: Remove debug print statements
+    print(query_string)
+    print(args)
+    connection = sqlite3.connect('../scripts/results.sqlite')
+    cursor = connection.cursor()
+    if args is None:
+        cursor.execute(query_string)
+    else:
+        cursor.execute(query_string, args)
+    results = list(cursor.fetchall())
+    if flat:
+        if results == []:
+            return results
+        else:
+            return flatten(results)
+    else:
+        return results
+
+
+#TODO: Test this
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
+#TODO: Test this
+def reformat_time(s):
+    input_format = "%Y-%m-%d %H:%M:%S"
+    output_format = "%Y-%m-%d"
+    return datetime.datetime.strftime(datetime.datetime.strptime(s[:19],
+                input_format), output_format)
+
+
 @app.route('/', methods=['GET', 'POST'])
 def root():
-    names = ['dev', 'qa', 'prod']
+    names = submit_query('SELECT DISTINCT instance_name FROM check_results', flat=True)
     if request.method == 'POST':
         if request.form['searchquery'] == '':
-            names = ['dev', 'qa', 'prod']
+            names = submit_query('SELECT DISTINCT instance_name FROM check_results', flat=True)
         else:
-            names = ['dev']
-    n = 10
-    passing = np.random.randint(0, 1, size=len(names))
-    numtests = np.random.randint(10, 10000, size=len(names))
-    dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
-    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
+            names = submit_query(('SELECT DISTINCT(instance_name) '
+                                            'FROM check_results '
+                                            'WHERE instance_name LIKE ?'),
+                            args=('%' + request.form['searchquery'] + '%',), flat=True)
 
-    data = []
-    for i in range(len(names)):
-        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
+    #TODO: Check that this string substitution is /ok/... Not sure if secure...
+    #TODO: Use the real data dates
+    history = []
+    for name in names:
+        instance_history = []
+        i = 0
+        for row in submit_query(('SELECT run_start_timestamp, check_violation_cnt '
+                                            'FROM check_results '
+                                            'WHERE instance_name="{}" '
+                                            'ORDER BY run_start_timestamp').format(name)):
+            instance_history.append([reformat_time(row[0]), row[1]])
+            i += 1
+        history.append(instance_history)
+
+    passing = [namehist[0][1] for namehist in history]
+
+    numtests = np.random.randint(10, 10000, size=len(names))
+
+    table_data = [[names[i], passing[i], numtests[i], passing[i]] for i in range(len(names))]
 
     content = render_template('instances.html',
-                        data=data,
                         colors=colors,
                         history=history,
-                        dates=dates,
-                        history_length=len(history[0]),
-                        numvals=len(history))
+                        table_data=table_data,
+                        numnames=len(history),
+                        numvals=[len(d) for d in history])
     return content
 
 
