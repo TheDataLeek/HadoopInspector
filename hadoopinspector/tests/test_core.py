@@ -10,6 +10,7 @@ from os.path import exists, isdir, isfile
 from os.path import join as pjoin
 from os.path import dirname
 import pytest
+import sqlite3
 
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 pgm         = os.path.join(script_path, 'hadoopinspector_runner.py')
@@ -120,9 +121,10 @@ class TestCheckResults(object):
         self.inst  = 'inst1'
         self.db    = 'db2'
         self.check_results = mod.CheckResults()
+        self.temp_dir  = tempfile.mkdtemp(prefix="hadinsp_")
 
     def teardown_method(self, method):
-        pass
+        shutil.rmtree(self.temp_dir)
 
     def add_2_checks_to_1_table(self, table, violations=0, rc=0):
         self.check_results.add(self.inst, self.db, table, 'check_fk1', violations, rc)
@@ -154,6 +156,32 @@ class TestCheckResults(object):
         self.add_2_checks_to_1_table('asset', rc=4)
         assert self.check_results.get_max_rc() == 4
 
+    def test_creating_sqlite_table(self):
+        self.add_2_checks_to_1_table('customer', violations=3)
+        self.check_results.write_to_sqlite(pjoin(self.temp_dir, 'results.sqlite'))
+        assert isfile(pjoin(self.temp_dir, 'results.sqlite'))
+        shutil.copy(pjoin(self.temp_dir, 'results.sqlite'), pjoin('/tmp', 'results.sqlite'))
+
+        conn = sqlite3.connect(pjoin(self.temp_dir, 'results.sqlite'))
+        cur  = conn.cursor()
+        sql  = "SELECT * FROM check_results"
+        cur.execute(sql)
+        results = cur.fetchall()
+        pp(results)
+        assert len(results)    == 2
+        assert len(results[0]) == 15
+        assert results[0][-1]  == 3
+        assert results[1][-1]  == 3
+
+        sql  = "SELECT max(run_start_timestamp), current_timestamp, \
+                       max(run_start_timestamp) - current_timestamp  as time_diff\
+                FROM check_results"
+        cur.execute(sql)
+        results = cur.fetchall()
+        pp(results)
+        assert results[0][2] in (0, 1), "should run in 0 seconds normally, 1 second worst-case"
+
+        conn.close()
 
 
 

@@ -22,31 +22,31 @@
         - cust_asset_events        (~ 3,000,000,000 rows) = avg of 1 event/asset/day for 7 years
         - cust_asset_event_month   (~ 840,000,000 rows) = 1 row/asset/month for 7 years
 
-    This results data will be written by default to /tmp/inspector_demo.csv.
+    This results data will be written by default to /tmp/inspector_demo.sqlite.
     4380 records will be written to this comma-delimited csv file without
     any quotes.  The fields are in the following order:
         - instance_name             STRING    (always 'prod')
         - database_name             STRING    (always 'westwind')
         - table_name                STRING
-        - table_partitioned         INTEGER   (1=True, 0=False)
         - run_start_timestamp       TIMESTAMP (YYYY-MM-DD HH:MM:SS)
-        - run_mode                  STRING    ('full' or 'incremental')
-        - partition_key             STRING    ('' or 'date_id')
-        - partition_value           STRING    (5-digit julian date for partitioned tables)
         - check_name                STRING
         - check_policy_type         STRING    ('quality' or 'data-management')
         - check_type                STRING    ('rule')
-        - run_check_start_timestamp TIMESTAMP (YYYY-MM-DD HH:MM:SS)
-        - run_check_end_timestamp   TIMESTAMP (YYYY-MM-DD HH:MM:SS)
         - run_check_mode            STRING    ('full' or 'incremental')
         - run_check_rc              INTEGER   (always 0)
         - run_check_violation_cnt   INTEGER
-        - run_check_anomaly_score   INTEGER   (always 0)
         - run_check_scope           INTEGER   (0-100)
         - run_check_unit            STRING    ('tables' or 'rows')
         - run_check_severity_score  INTEGER   (0-100)
-        - run_check_validated       STRING    (always '')
 
+    These fields were initially included but have been taken out for now:
+        #- table_partitioned         INTEGER   (1=True, 0=False)
+        #- run_mode                  STRING    ('full' or 'incremental')
+        #- partition_key             STRING    ('' or 'date_id')
+        #- partition_value           STRING    (5-digit julian date for partitioned tables)
+        #- run_check_start_timestamp TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+        #- run_check_end_timestamp   TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+        #- run_check_anomaly_score   INTEGER   (always 0)
 
 """
 from __future__ import division
@@ -55,13 +55,16 @@ import random
 import argparse
 import time, datetime
 from os.path import join as pjoin
-from os.path import isfile, isdir, exists
+from os.path import isfile, isdir, exists, dirname, basename
 import csv
 import random
 import json
 from pprint import pprint as pp
 
-__version__ = '0.0.1'
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+import hadoopinspector.core as core
+
+__version__ = '0.0.2'
 user_tables = {}
 
 
@@ -80,68 +83,46 @@ def main():
 
 
 def create_test_file(user_instance, user_db, output_filename):
-    fieldnames = ('instance_name', 'database_name', 'table_name',
-                  'table_partitioned', 'run_start_timestamp', 'run_mode',
-                  'partition_key', 'partition_value', 'check_name',
-                  'check_policy_type', 'check_type',
-                  'run_check_start_timestamp', 'run_check_end_timestamp',
-                  'run_check_mode', 'run_check_rc', 'run_check_violation_cnt',
-                  'run_check_anomaly_score', 'run_check_scope', 'run_check_unit',
-                  'run_check_severity_score', 'run_check_validated')
 
-    newfile = True if os.exists(output_filename) else False
-    outfile = open(output_filename, 'a')
-
-    # write header:
-    if newfile:
-        outfile.write(','.join(fieldnames) + '\n')
-
-    writer  = csv.DictWriter(outfile, fieldnames)
-    # Establish instance name
-    # Establish database name
-    #for day_of_year in range(1,365):
-    curr_datetime = None
+    check_results = core.CheckResults()
     for month_of_year in range(1,13):
         for day_of_month in range(1, get_month_days(month_of_year)+1):
-            #print('2015-%-2.2d-%-2.2d' % (month_of_year, day_of_month))
             run_start_datetime   = get_run_start_datetime(2015, month_of_year, day_of_month)
             for table_name in user_tables:
                 for check_name in user_tables[table_name]['checks']:
-                    curr_datetime                         = get_curr_datetime(curr_datetime, run_start_datetime)
-                    row_dict = {}
-                    row_dict['instance_name']             = user_instance
-                    row_dict['database_name']             = user_db
-                    row_dict['table_name']                = table_name
-                    row_dict['table_partitioned']         = get_table_partitioned(user_tables[table_name]['partition_key'])
-                    row_dict['run_start_timestamp']       = get_ts_from_dt(run_start_datetime)
-                    row_dict['run_mode']                  = user_tables[table_name]['mode']
-                    row_dict['partition_key']             = get_partition_key(user_tables[table_name]['partition_key'])
-                    row_dict['partition_value']           = get_partition_value(row_dict['run_mode'], curr_datetime)
-                    row_dict['check_name']                = check_name
-                    row_dict['check_policy_type']         = get_check_policy_type(user_tables[table_name]['checks'][check_name]['policy_type'])
-                    row_dict['check_type']                = get_check_type(user_tables[table_name]['checks'][check_name]['check_type'])
-                    row_dict['run_check_start_timestamp'] = get_ts_from_dt(curr_datetime)
-                    row_dict['run_check_end_timestamp']   = get_ts_from_dt(curr_datetime + datetime.timedelta(seconds=1))
-                    row_dict['run_check_mode']            = get_run_check_mode(user_tables[table_name]['mode'],
-                                                                               user_tables[table_name]['checks'][check_name]['mode'])
-                    row_dict['run_check_rc']              = '0'
-                    row_dict['run_check_violation_cnt']   = get_violation_cnt(table_name, check_name)
-
-                    row_dict['run_check_unit']            = user_tables[table_name]['checks'][check_name]['violation_unit']
-                    row_dict['run_check_scope']           = get_scope(user_tables[table_name]['partition_key'],
-                                                                      user_tables[table_name]['partition_row_cnt_avg'],
-                                                                      user_tables[table_name]['checks'][check_name]['violation_unit'],
-                                                                      row_dict['run_check_violation_cnt'])
+                    #curr_datetime                         = get_curr_datetime(curr_datetime, run_start_datetime)
+                    #row_dict['table_partitioned']         = get_table_partitioned(user_tables[table_name]['partition_key'])
+                    #row_dict['run_start_timestamp']       = get_ts_from_dt(run_start_datetime)
+                    #row_dict['run_mode']                  = user_tables[table_name]['mode']
+                    #row_dict['partition_key']             = get_partition_key(user_tables[table_name]['partition_key'])
+                    #row_dict['partition_value']           = get_partition_value(row_dict['run_mode'], curr_datetime)
+                    #row_dict['run_check_start_timestamp'] = get_ts_from_dt(curr_datetime)
+                    #row_dict['run_check_end_timestamp']   = get_ts_from_dt(curr_datetime + datetime.timedelta(seconds=1))
 
                     default_severity_name  = user_tables[table_name]['checks'][check_name]['severity']
                     default_severity_score = convert_severity(default_severity_name)
+                    scope =  get_scope(user_tables[table_name]['partition_key'],
+                                    user_tables[table_name]['partition_row_cnt_avg'],
+                                    user_tables[table_name]['checks'][check_name]['violation_unit'],
+                                    get_violation_cnt(table_name, check_name))
 
-                    row_dict['run_check_severity_score']  = get_severity_score(default_severity_score,
-                                                                               row_dict['run_check_scope'])
-                    row_dict['run_check_anomaly_score']   = '0'
-                    row_dict['run_check_validated']       = ''
-                    writer.writerow(row_dict)
-    outfile.close()
+                    check_results.add(user_instance,
+                            user_db,
+                            table_name,
+                            check_name,
+                            get_violation_cnt(table_name, check_name),
+                            '0',
+                            'active',
+                            get_check_type(user_tables[table_name]['checks'][check_name]['check_type']),
+                            get_check_policy_type(user_tables[table_name]['checks'][check_name]['policy_type']),
+                            get_run_check_mode(user_tables[table_name]['mode'],
+                                            user_tables[table_name]['checks'][check_name]['mode']),
+                            user_tables[table_name]['checks'][check_name]['violation_unit'],
+                            scope,
+                            get_severity_score(default_severity_score, scope)
+                            )
+
+    check_results.write_to_sqlite(output_filename)
 
 
 def get_violation_cnt(table_name, check_name):
@@ -202,6 +183,8 @@ def get_scope(partition_key, avg_row_cnt, violation_unit, violation_cnt):
     """ Returns the scope of the violations.
         Range is 0 to 100 - 100 being the greatest scope
     """
+    assert isnumeric(violation_cnt)
+    assert isnumeric(avg_row_cnt)
     if not violation_cnt:
         return 0
     elif violation_unit == 'tables':
@@ -219,6 +202,8 @@ def get_severity_score(default_severity_score, scope):
     """ Returns the severity of the violations.
         Range is 0 to 100 - 100 being the most severe.
     """
+    assert isnumeric(default_severity_score)
+    assert isnumeric(scope)
     severity_score = (scope * default_severity_score) / 100
     if severity_score == 0:
         return 0
@@ -287,6 +272,15 @@ def get_check_type(raw_check_type):
     return raw_check_type
 
 
+def isnumeric(val):
+    try:
+        int(val)
+    except TypeError:
+        return False
+    except ValueError:
+        return False
+    else:
+        return True
 
 
 def get_args():

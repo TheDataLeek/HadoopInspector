@@ -1,11 +1,12 @@
 #!/usr/bin/env python34
 
-import os, sys, time
+import os, sys, time, datetime
 import json
 from pprint import pprint as pp
 import validictory
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
+import sqlite3
 
 
 
@@ -218,12 +219,23 @@ class CheckRepo(object):
 class CheckResults(object):
 
     def __init__(self):
+        self.start_dt = datetime.datetime.utcnow()
         self.results = {}
 
-    def add(self, instance, database, table, check, violations, rc, check_status=None):
+    def add(self, instance, database, table, check, violations, rc,
+            check_status=None, check_type='rule', 
+            check_policy_type='quality',
+            check_mode='full', check_unit='rows',
+            check_scope=-1, check_severity_score=-1):
         assert isnumeric(rc)
         assert isnumeric(violations)
+        assert check_type   in ('rule', 'profile')
+        assert check_policy_type   in ('quality', 'consistency', 'data-management'), "invalid policy_type: %s" % check_policy_type
+        assert check_unit   in ('rows', 'tables')
+        assert check_mode   in ('full', 'incremental')
         assert check_status in (None, 'active', 'inactive')
+        assert isnumeric(check_scope)
+        assert isnumeric(check_severity_score)
 
         if instance not in self.results:
             self.results[instance] = {}
@@ -235,7 +247,14 @@ class CheckResults(object):
             self.results[instance][database][table][check] = {}
 
         self.results[instance][database][table][check]['violation_cnt'] = violations
-        self.results[instance][database][table][check]['rc'] = rc
+        self.results[instance][database][table][check]['rc']            = rc
+        self.results[instance][database][table][check]['check_status']  = check_status
+        self.results[instance][database][table][check]['check_unit']    = check_unit
+        self.results[instance][database][table][check]['check_type']    = check_type
+        self.results[instance][database][table][check]['check_policy_type']    = check_type
+        self.results[instance][database][table][check]['check_mode']           = check_mode
+        self.results[instance][database][table][check]['check_scope']          = check_scope
+        self.results[instance][database][table][check]['check_severity_score'] = check_severity_score
 
     def get_max_rc(self):
         max_rc = 0
@@ -258,6 +277,65 @@ class CheckResults(object):
                                            self.results[instance][database][table][check]['violation_cnt'])
                                 formatted_results.append(rec)
         return formatted_results
+
+    def write_to_sqlite(self, fqfn):
+        if not isfile(fqfn):
+            create_sqlite_db(fqfn)
+
+        stop_dt = datetime.datetime.utcnow()
+
+        conn = sqlite3.connect(fqfn)
+        cur  = conn.cursor()
+        recs = []
+
+        sql  = """INSERT INTO check_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  """
+        for instance in self.results:
+            for database in self.results[instance]:
+                for table in self.results[instance][database]:
+                    for check in self.results[instance][database][table]:
+                         recs.append( (instance, database, table, check,
+                                       self.results[instance][database][table][check]['check_type'],
+                                       self.results[instance][database][table][check]['check_policy_type'],
+                                       self.results[instance][database][table][check]['check_mode'],
+                                       self.results[instance][database][table][check]['check_unit'],
+                                       self.results[instance][database][table][check]['check_status'],
+                                       self.start_dt,
+                                       stop_dt,
+                                       self.results[instance][database][table][check]['rc'],
+                                       self.results[instance][database][table][check]['check_scope'],
+                                       self.results[instance][database][table][check]['check_severity_score'],
+                                       self.results[instance][database][table][check]['violation_cnt'],
+
+) )
+        if recs:
+            cur.executemany(sql, recs)
+            conn.commit()
+        conn.close()
+
+
+def create_sqlite_db(fqfn):
+    conn = sqlite3.connect(fqfn)
+    cmd = """ \
+            CREATE TABLE check_results  ( \
+            instance_name       TEXT,  \
+            database_name       TEXT,  \
+            table_name          TEXT,  \
+            check_name          TEXT,  \
+            check_type          TEXT,  \
+            check_policy_type   TEXT,  \
+            check_mode          TEXT,  \
+            check_unit          TEXT,  \
+            check_status        TEXT,  \
+            run_start_timestamp TIMESTAMP, \
+            run_stop_timestamp  TIMESTAMP, \
+            check_rc            INT,   \
+            check_scope         INT,   \
+            check_severity_score INT,   \
+            check_violation_cnt INT ) """
+    c    = conn.cursor()
+    c.execute(cmd)
+    conn.commit()
+    conn.close()
 
 
 
