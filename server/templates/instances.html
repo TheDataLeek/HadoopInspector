@@ -47,7 +47,6 @@
 <script>
 function convertDataWeek() {
 {% for row in history %}
-    {% set outerloop = loop.index %}
     var {{ table_data[loop.index - 1][0] }} = [
     {% for value in row %}
         {
@@ -70,7 +69,6 @@ function convertDataWeek() {
 };
 function convertDataMonth() {
 {% for row in history %}
-    {% set outerloop = loop.index %}
     var {{ table_data[loop.index - 1][0] }} = [
     {% for value in row %}
         {
@@ -93,7 +91,6 @@ function convertDataMonth() {
 };
 function convertDataYear() {
 {% for row in history %}
-    {% set outerloop = loop.index %}
     var {{ table_data[loop.index - 1][0] }} = [
     {% for value in row %}
         {

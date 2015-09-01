@@ -38,9 +38,6 @@ def main():
 #TODO: Make this function more configurable
 #TODO: Test this function!
 def submit_query(query_string, args=None, flat=False):
-    #TODO: Remove debug print statements
-    print(query_string)
-    print(args)
     connection = sqlite3.connect('../scripts/results.sqlite')
     cursor = connection.cursor()
     if args is None:
@@ -72,10 +69,11 @@ def reformat_time(s):
 
 @app.route('/', methods=['GET', 'POST'])
 def root():
-    names = submit_query('SELECT DISTINCT instance_name FROM check_results', flat=True)
+    get_all_names = lambda : submit_query('SELECT DISTINCT instance_name FROM check_results', flat=True)
+    names = get_all_names()
     if request.method == 'POST':
         if request.form['searchquery'] == '':
-            names = submit_query('SELECT DISTINCT instance_name FROM check_results', flat=True)
+            names = get_all_names()
         else:
             names = submit_query(('SELECT DISTINCT(instance_name) '
                                             'FROM check_results '
@@ -83,17 +81,14 @@ def root():
                             args=('%' + request.form['searchquery'] + '%',), flat=True)
 
     #TODO: Check that this string substitution is /ok/... Not sure if secure...
-    #TODO: Use the real data dates
     history = []
     for name in names:
         instance_history = []
-        i = 0
         for row in submit_query(('SELECT run_start_timestamp, check_violation_cnt '
                                             'FROM check_results '
                                             'WHERE instance_name="{}" '
                                             'ORDER BY run_start_timestamp').format(name)):
             instance_history.append([reformat_time(row[0]), row[1]])
-            i += 1
         history.append(instance_history)
 
     passing = [namehist[0][1] for namehist in history]
@@ -113,30 +108,48 @@ def root():
 
 @app.route('/inspect/<instance>', methods=['GET', 'POST'])
 def instance(instance):
-    names = ['users', 'addresses', 'thisisaname']
+    get_all_names = lambda : submit_query(('SELECT DISTINCT(database_name) '
+                                            'FROM check_results '
+                                            'WHERE instance_name=?'),
+                                            args=(instance,), flat=True)
+    names = get_all_names()
     if request.method == 'POST':
         if request.form['searchquery'] == '':
-            names = ['users', 'addresses', 'thisisaname']
+            names = get_all_names()
         else:
-            names = ['users']
-    n = 30
-    passing = np.random.randint(0, 1, size=len(names))
-    numtests = np.random.randint(10, 10000, size=len(names))
-    history = [[random.randint(0, 100) for i in range(n)] for j in range(len(names))]
-    dates = [[datetime.datetime.strftime((datetime.datetime.now() - datetime.timedelta(days=i)), '%Y-%m-%d')  for i in range(n)] for j in range(len(names))]
+            names = submit_query(('SELECT DISTINCT(database_name) '
+                                            'FROM check_results '
+                                            'WHERE instance_name=? '
+                                            'AND database_name LIKE ?'),
+                            args=('%' + request.form['searchquery'] + '%',), flat=True)
 
-    data = []
-    for i in range(len(names)):
-        data.append([names[i], passing[i], numtests[i], 0 if passing[i] == 1 else random.randint(0, 5)])
+    #TODO: Check that this string substitution is /ok/... Not sure if secure...
+    history = []
+    for name in names:
+        instance_history = []
+        for row in submit_query(('SELECT run_start_timestamp, check_violation_cnt '
+                                            'FROM check_results '
+                                            'WHERE instance_name=? '
+                                            'AND database_name="{}" '
+                                            'ORDER BY run_start_timestamp').format(name),
+                                        args=(instance,)):
+            instance_history.append([reformat_time(row[0]), row[1]])
+        history.append(instance_history)
+
+    print(history)
+    passing = [namehist[0][1] for namehist in history]
+
+    numtests = np.random.randint(10, 10000, size=len(names))
+
+    table_data = [[names[i], passing[i], numtests[i], passing[i]] for i in range(len(names))]
 
     content = render_template('databases.html',
                                 instance=instance,
                                 colors=colors,
-                                data=data,
-                                dates=dates,
+                                table_data=table_data,
                                 history=history,
-                                history_length=len(history[0]),
-                                numvals=len(history))
+                                numvals=[len(d) for d in history],
+                                numnames=len(history))
     return content
 
 
