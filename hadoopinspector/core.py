@@ -223,10 +223,15 @@ class CheckResults(object):
         self.results = {}
 
     def add(self, instance, database, table, check, violations, rc,
-            check_status=None, check_type='rule', 
+            check_status=None,
+            check_type='rule',
             check_policy_type='quality',
-            check_mode='full', check_unit='rows',
-            check_scope=-1, check_severity_score=-1):
+            check_mode='full',
+            check_unit='rows',
+            check_scope=-1,
+            check_severity_score=-1,
+            run_start_timestamp=None,
+            run_stop_timestamp=None):
         assert isnumeric(rc)
         assert isnumeric(violations)
         assert check_type   in ('rule', 'profile')
@@ -255,6 +260,8 @@ class CheckResults(object):
         self.results[instance][database][table][check]['check_mode']           = check_mode
         self.results[instance][database][table][check]['check_scope']          = check_scope
         self.results[instance][database][table][check]['check_severity_score'] = check_severity_score
+        self.results[instance][database][table][check]['run_start_timestamp']  = run_start_timestamp
+        self.results[instance][database][table][check]['run_stop_timestamp']   = run_stop_timestamp
 
     def get_max_rc(self):
         max_rc = 0
@@ -299,8 +306,8 @@ class CheckResults(object):
                                        self.results[instance][database][table][check]['check_mode'],
                                        self.results[instance][database][table][check]['check_unit'],
                                        self.results[instance][database][table][check]['check_status'],
-                                       self.start_dt,
-                                       stop_dt,
+                                       (self.results[instance][database][table][check]['run_start_timestamp'] or self.start_dt),
+                                       (self.results[instance][database][table][check]['run_stop_timestamp']  or stop_dt),
                                        self.results[instance][database][table][check]['rc'],
                                        self.results[instance][database][table][check]['check_scope'],
                                        self.results[instance][database][table][check]['check_severity_score'],
