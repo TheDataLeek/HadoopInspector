@@ -28,6 +28,8 @@ def main():
     check_results  = core.CheckResults()
 
     checker    = CheckRunner(registry, check_repo, check_results)
+    checker.store_variable_to_env('hapinsp_instance', args.instance)
+    checker.store_variable_to_env('hapinsp_database', args.database)
     checker.run_checks_for_tables(args.table)
 
     if args.report:
@@ -92,6 +94,9 @@ class CheckRunner(object):
         self.registry = registry
         self.results  = check_results
 
+    def store_variable_to_env(self, key, value):
+        os.putenv(key, value)
+
 
     def run_checks_for_tables(self, table):
         """
@@ -102,6 +107,7 @@ class CheckRunner(object):
         for instance in self.registry.db_registry:
             for database in self.registry.db_registry[instance]:
                 for table in self.registry.db_registry[instance][database]:
+                    self.store_variable_to_env('hapinsp_table', table)
                     for check in self.registry.db_registry[instance][database][table]:
                         reg_check = self.registry.db_registry[instance][database][table][check]
                         if reg_check['check_status'] == 'active':
