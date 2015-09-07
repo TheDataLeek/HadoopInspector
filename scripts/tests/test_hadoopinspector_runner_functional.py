@@ -195,6 +195,59 @@ class TestWithMockedCheckFiles(object):
         assert str(run_rc) == expected_run_rc
 
 
+    def test_check_env_variable_table(self):
+        table                  = 'customer'
+        expected_check_cnt     = 1
+        expected_check_rc      = '0'
+        expected_run_rc        = '0'
+        expected_violation_cnt = '0'
+        check_fqfn = add_env_check(self.check_dir, key='hapinsp_table', value='customer')
+        os.system("cat %s" % check_fqfn)
+        self.registry_fqfn = add_to_registry(self.registry_fqfn, self.inst, self.db,
+                             table, self.check_dir, check_fqfn)
+
+        report, run_rc = self.run_cmd()
+
+        report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
+        assert str(run_rc) == expected_run_rc
+
+    def test_check_env_variables_database(self):
+        table                  = 'customer'
+        expected_check_cnt     = 1
+        expected_check_rc      = '0'
+        expected_run_rc        = '0'
+        expected_violation_cnt = '0'
+        check_fqfn = add_env_check(self.check_dir, key='hapinsp_database', value=self.db)
+        os.system("cat %s" % check_fqfn)
+        self.registry_fqfn = add_to_registry(self.registry_fqfn, self.inst, self.db,
+                             table, self.check_dir, check_fqfn)
+
+        report, run_rc = self.run_cmd()
+
+        report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
+        assert str(run_rc) == expected_run_rc
+
+    def test_check_env_variables_instance(self):
+        table                  = 'customer'
+        expected_check_cnt     = 1
+        expected_check_rc      = '0'
+        expected_run_rc        = '0'
+        expected_violation_cnt = '0'
+        check_fqfn = add_env_check(self.check_dir, key='hapinsp_instance', value=self.inst)
+        os.system("cat %s" % check_fqfn)
+        self.registry_fqfn = add_to_registry(self.registry_fqfn, self.inst, self.db,
+                             table, self.check_dir, check_fqfn)
+
+        report, run_rc = self.run_cmd()
+
+        report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
+        assert str(run_rc) == expected_run_rc
+
+
+
+
+
+
 def add_to_registry(registry_fn, inst, db, table, check_dir, check_fn):
 
    check_alias  = os.path.splitext(basename(check_fn))[0]
@@ -228,6 +281,29 @@ def add_check(check_dir, rc, out_count):
     st = os.stat(fqfn)
     os.chmod(fqfn, st.st_mode | stat.S_IEXEC)
     return fqfn
+
+
+def add_env_check(check_dir, key, value):
+
+    for check_id in range(1000):
+       fqfn = pjoin(check_dir, 'check_%d.bash' % check_id)
+       if not isfile(fqfn):
+           break
+
+    with open(fqfn, 'w') as f:
+        f.write("""#!/usr/bin/env bash \n """ )
+        f.write('\n')
+        f.write(""" if [ "$%s" = "%s"  ]; then \n""" % (key, value))
+        f.write("""     outcount=0 \n""")
+        f.write(""" else \n""")
+        f.write("""     outcount=1 \n""")
+        f.write(""" fi \n""")
+        f.write(""" echo "violation_cnt: $outcount " \n""" )
+        f.write(""" exit 0 \n """)
+    st = os.stat(fqfn)
+    os.chmod(fqfn, st.st_mode | stat.S_IEXEC)
+    return fqfn
+
 
 
 def report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt):
