@@ -84,10 +84,11 @@ def main():
 
 def create_test_file(user_instance, user_db, output_filename):
 
-    check_results = core.CheckResults()
     for month_of_year in range(1,13):
+        print("generating month: %d" % month_of_year)
         for day_of_month in range(1, get_month_days(month_of_year)+1):
-            run_start_datetime   = get_run_start_datetime(2015, month_of_year, day_of_month)
+            run_start_datetime   = get_run_start_datetime(2014, month_of_year, day_of_month)
+            check_results = core.CheckResults()
             for table_name in user_tables:
                 for check_name in user_tables[table_name]['checks']:
                     #curr_datetime                         = get_curr_datetime(curr_datetime, run_start_datetime)
@@ -119,10 +120,12 @@ def create_test_file(user_instance, user_db, output_filename):
                                             user_tables[table_name]['checks'][check_name]['mode']),
                             user_tables[table_name]['checks'][check_name]['violation_unit'],
                             scope,
-                            get_severity_score(default_severity_score, scope)
+                            get_severity_score(default_severity_score, scope),
+                            run_start_timestamp=run_start_datetime,
+                            run_stop_timestamp=(run_start_datetime + datetime.timedelta(hours=1))
                             )
 
-    check_results.write_to_sqlite(output_filename)
+            check_results.write_to_sqlite(output_filename)
 
 
 def get_violation_cnt(table_name, check_name):

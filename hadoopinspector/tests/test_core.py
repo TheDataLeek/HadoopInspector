@@ -1,6 +1,7 @@
 #!/usr/bin/env python34
 from __future__ import division
 import sys, os, shutil, stat
+import time, datetime
 import tempfile, json
 import subprocess
 import copy
@@ -130,6 +131,11 @@ class TestCheckResults(object):
         self.check_results.add(self.inst, self.db, table, 'check_fk1', violations, rc)
         self.check_results.add(self.inst, self.db, table, 'check_fk2', violations, rc)
 
+    def add_1_demo_check_to_1_table(self, table, violations, rc, start_dt, stop_dt):
+        self.check_results.add(self.inst, self.db, table, 'check_fk1', violations, rc,
+                               run_start_timestamp=start_dt,
+                               run_stop_timestamp=stop_dt)
+
     def test_add(self):
         self.add_2_checks_to_1_table('customer', 3, 0)
         table_results = self.check_results.results[self.inst][self.db]['customer']
@@ -145,6 +151,16 @@ class TestCheckResults(object):
         assert table_results['check_fk1']['violation_cnt'] == '3'
         assert table_results['check_fk2']['rc'] == '0'
         assert table_results['check_fk2']['violation_cnt'] == '3'
+
+    def test_demo_add(self):
+        start_dt = datetime.datetime(2015, 1, 2, 15, 22, 59)
+        stop_dt  = datetime.datetime(2015, 1, 2, 15, 23, 59)
+        self.add_1_demo_check_to_1_table('customer', '3', '0', start_dt, stop_dt)
+        table_results = self.check_results.results[self.inst][self.db]['customer']
+        assert table_results['check_fk1']['rc'] == '0'
+        assert table_results['check_fk1']['violation_cnt'] == '3'
+        assert table_results['check_fk1']['run_start_timestamp'] == start_dt
+        assert table_results['check_fk1']['run_stop_timestamp']  == stop_dt
 
     def test_get_tables(self):
         self.add_2_checks_to_1_table('customer')

@@ -2,10 +2,10 @@ Flask==0.10.1
 Jinja2==2.8
 MarkupSafe==0.23
 Werkzeug==0.10.4
-matplotlib==1.4.3
+#matplotlib==1.4.3
 mpld3==0.2
-numpy==1.9.2
-pandas==0.16.2
+#numpy==1.9.2
+#pandas==0.16.2
 python-dateutil==2.4.2
 pytest==2.7.2
 pytz==2015.4
