@@ -97,7 +97,7 @@
 
         <div class="row">
             <div class="col-md-12">
-                <table data-toggle="table" {% if numnames > 5 %}data-height="400"{% endif %} data-sort-name="id" data-sort-order="asc">
+                <table data-toggle="table" {% if (names|length > 5) or (raw_history|length > 5) %}data-height="400"{% endif %} data-sort-name="id" data-sort-order="asc">
                     {% block table %}
                     {% endblock %}
                 </table>
