@@ -1,6 +1,6 @@
 #!/usr/bin/env python34
 
-import os, sys, time, datetime
+import os, sys, time, datetime, subprocess
 import json
 from pprint import pprint as pp
 import validictory
@@ -12,8 +12,7 @@ import sqlite3
 
 class Registry(object):
 
-    """
-    Sample Config File, with just a single check for a single table 
+    """ Sample Config File, with just a single check for a single table
     for a single db for a single instance:
     {
         "prod1": {                      # instance-name
@@ -43,10 +42,6 @@ class Registry(object):
     def load_registry(self, fqfn):
         """
         :param fqfn     - str
-        :param instance - str
-        :param db       - str
-        :param table    - str, optional
-        :param check    - str, optional
         """
         if not isfile(fqfn):
             abort("Invalid registry file: %s" % fqfn)
@@ -54,15 +49,23 @@ class Registry(object):
             self.full_registry = json.load(f)
 
     def generate_db_registry(self, instance, db, table=None, check=None):
+        """ Generate the db registry from the full registry.  Optionally, only
+        include specified table and/or check
+
+        :param instance - str
+        :param db       - str
+        :param table    - str, optional
+        :param check    - str, optional
+        """
+
         assert instance is not None
         assert db is not None
 
         if not self.full_registry:
             raise EOFError("Registry is empty")
 
-        # just in case provided instance & db aren't in registry:
+        # just in case provided instance & db aren't in loaded full_registry:
         if instance not in self.full_registry or db not in self.full_registry[instance]:
-            #pp("\n\nself.full_registry: ")
             pp(self.full_registry)
             raise EOFError("No registry found for instance (%s) & db (%s)" % (instance, db) )
 
@@ -79,7 +82,6 @@ class Registry(object):
 
     def get_instance(self, instance, registry=None):
         if registry is None:
-
             registry = self.full_registry
         return registry[instance]
 
@@ -110,7 +112,8 @@ class Registry(object):
 
     def add_check(self, instance, db, table, check, check_name, check_status, check_type,
                   check_mode, check_scope, check_tags, registry=None):
-        """ Adds a check structure to registry provided as arg
+        """ Add a check structure to registry.  If no registry is provided,
+            then it'll add this to the full_registry.
         """
         if registry is None:
             registry = self.full_registry
@@ -157,14 +160,14 @@ class Registry(object):
 
     def validate(self, registry):
 
-        check_schema = {
+        regular_check_schema = {
              "type": "object",
              "properties": {
                     "check_name":   {"type": "string"},
                     "check_status": {"type": "string",
                                     "enum": ["active", "inactive"] },
                     "check_type":   {"type": "string",
-                                    "enum": ["rule", "profiler"] },
+                                    "enum": ["rule", "profile"] },
                     "check_mode":   {"type": "string",
                                     "enum": ["full", "part"] },
                     "check_scope":  {"type": "string",
@@ -172,18 +175,39 @@ class Registry(object):
                     "check_tags":   {"type": "array"}
                            }
         }
+        setupteardown_check_schema = {
+             "type": "object",
+             "properties": {
+                    "check_name":   {"type": "string"},
+                    "check_status": {"type": "string",
+                                    "enum": ["active", "inactive"] },
+                    "check_type":   {"type": "string",
+                                    "enum": ["setup", "teardown"] },
+                    "check_mode":   {"type": "null"},
+                    "check_scope":  {"type": "null"},
+                    "check_tags":   {"type": "array"}
+                           }
+        }
 
-        def validate_check(check_reg):
+
+        def validate_check(check_reg, check_type):
+            assert check_type in ['rule', 'profile', 'setup', 'teardown']
             try:
-                validictory.validate(check_reg, check_schema)
+                if check_type in ['setup', 'teardown']:
+                    validictory.validate(check_reg, setupteardown_check_schema)
+                else:
+                    validictory.validate(check_reg, regular_check_schema)
             except validictory.validator.RequiredFieldValidationError as e:
+                pp(check_reg)
                 abort("Registry error on field: %s" % e)
             except validictory.FieldValidationError as e:
-                abort("Registry error on field: %s" % e.fieldname)
+                pp(check_reg)
+                abort("Registry error on field: %s with value: %s with check_type: %s" \
+                     % (e.fieldname, check_reg[e.fieldname], check_type))
             except:
                 abort("Error encountered while processing Registry")
 
-        pp(registry)
+        #pp(registry)
         if not isinstance(registry, dict):
             abort(msg="Invalid registry")
         for instance in registry:
@@ -196,19 +220,21 @@ class Registry(object):
                     if not isinstance(registry[instance][db][table], dict):
                         abort(msg="Invalid registry table: %s.%s.%s" % (instance, db, table))
                     for check in registry[instance][db][table]:
-                        validate_check(registry[instance][db][table][check])
+                        check_type = registry[instance][db][table][check].get('check_type', None)
+                        if check_type is None:
+                            abort(msg="Missing check_type for: %s.%s.%s" % (instance, db, table ))
+                        else:
+                            validate_check(registry[instance][db][table][check], check_type)
 
 
 
 class CheckRepo(object):
+    """ Maintains information about actual checks.
+
+    """
 
     def __init__(self, check_dir):
         self.check_dir = check_dir
-        # check repo is constructed here
-        # check_repo contains a dictionary of table names
-        # each table name contains a dictionary of checks
-        # each cehck contains a dictionary of info about that check and how to # run it
-        # todo: expand on this description
         self.repo      = {}
         for check_fn in os.listdir(self.check_dir):
             self.repo[check_fn] = {}
@@ -234,7 +260,7 @@ class CheckResults(object):
             run_stop_timestamp=None):
         assert isnumeric(rc)
         assert isnumeric(violations)
-        assert check_type   in ('rule', 'profile')
+        assert check_type   in ('rule', 'profile', 'setup', 'teardown')
         assert check_policy_type   in ('quality', 'consistency', 'data-management'), "invalid policy_type: %s" % check_policy_type
         assert check_unit   in ('rows', 'tables')
         assert check_mode   in ('full', 'incremental')
@@ -286,6 +312,11 @@ class CheckResults(object):
         return formatted_results
 
     def write_to_sqlite(self, fqfn):
+        """ Writes all check results at once to a sqlite database.
+        #todo: check if this date already been tested, and if so, delete those prior results.
+        #todo: add column to hold partitioning keys for incremental testing
+        #todo: add "logical_delete" column for the deletes
+        """
         if not isfile(fqfn):
             create_sqlite_db(fqfn)
 
@@ -311,9 +342,7 @@ class CheckResults(object):
                                        self.results[instance][database][table][check]['rc'],
                                        self.results[instance][database][table][check]['check_scope'],
                                        self.results[instance][database][table][check]['check_severity_score'],
-                                       self.results[instance][database][table][check]['violation_cnt'],
-
-) )
+                                       self.results[instance][database][table][check]['violation_cnt'], ) )
         if recs:
             cur.executemany(sql, recs)
             conn.commit()
@@ -359,6 +388,133 @@ def isnumeric(val):
         return False
     else:
         return True
+
+
+
+
+class CheckRunner(object):
+
+    def __init__(self, registry, check_repo, check_results):
+        """ This is the general test runner class
+
+        :param check_repo: CheckRepository object
+        """
+        self.repo     = check_repo
+        self.registry = registry
+        self.results  = check_results
+        self.db_vars    = []
+        self.table_vars = []
+
+    def add_db_var(self, key, value):
+        self.db_vars.append((key, value))
+        os.environ[key] = value
+
+    def drop_db_vars(self):
+        for kv_tup in self.db_vars:
+            os.environ.pop(kv_tup[0])
+
+    def add_table_var(self, key, value):
+        self.table_vars.append((key, value))
+        os.environ[key] = value
+
+    def drop_table_vars(self):
+        for kv_tup in self.table_vars:
+            os.environ.pop(kv_tup[0])
+        self.table_vars = []
+
+    def run_checks_for_tables(self, table_override):
+        """ Runs checks on all tables, or just one if a non-None table value is provided.
+
+        :return: None
+
+        #todo: use table_override
+        """
+        for inst in self.registry.db_registry:
+            for db in self.registry.db_registry[inst]:
+                for table in self.registry.db_registry[inst][db]:
+
+                    self.add_table_var('hapinsp_table', table)
+
+                    # setup checks must happen first.  
+                    # We can run multiple setup checks, but they'll be in arbitrary order.
+                    for setup_check in [ x for x in self.registry.db_registry[inst][db][table]
+                               if self.registry.db_registry[inst][db][table][x]['check_type'] == 'setup' ]:
+                        reg_check = self.registry.db_registry[inst][db][table][setup_check]
+                        if reg_check['check_status'] == 'active':
+                            check_vars, rc = self._run_setup_check(reg_check)
+                            check_status = 'active'
+                        else:
+                            check_vars = {}
+                            rc         = None
+                            check_status = reg_check['check_status']
+                        for check_var in check_vars:
+                            self.add_table_var(check_var, check_vars[check_var])
+                        count = None
+                        self.results.add(inst, db, table, setup_check, count, rc, check_status)
+
+
+                    # checks run in arbitrary order - might want to sort them
+                    for check in [ x for x in self.registry.db_registry[inst][db][table]
+                                   if self.registry.db_registry[inst][db][table][x]['check_type']
+                                       not in ('setup', 'teardown') ]:
+                        reg_check = self.registry.db_registry[inst][db][table][check]
+                        if reg_check['check_status'] == 'active':
+                            count, rc = self._run_check(reg_check)
+                            check_status = 'active'
+                        else:
+                            count = None
+                            rc    = None
+                            check_status = reg_check['check_status']
+                        self.results.add(inst, db, table, check, count, rc, check_status)
+
+                    self.drop_table_vars()
+
+
+    def _run_setup_check(self, reg_check):
+        check_fn       = self.repo.repo[reg_check['check_name']]['fqfn']
+        raw_output, rc = self._run_check_file(check_fn)
+        check_vars     = self.parse_setup_check_results(raw_output)
+        return check_vars, rc
+
+    def _run_check(self, reg_check):
+        check_fn       = self.repo.repo[reg_check['check_name']]['fqfn']
+        raw_output, rc = self._run_check_file(check_fn)
+        violation_cnt  = self.parse_check_results(raw_output)
+        return violation_cnt, rc
+
+    def parse_check_results(self, raw_output):
+        check = None
+        count = 0
+        #todo: make the following json
+        for rec in raw_output:
+            if 'violation_cnt:' in rec:
+                fields = rec.split()
+                count = int(fields[1])
+                assert isnumeric(count)
+        return count
+
+    def parse_setup_check_results(self, raw_output):
+        check = None
+        print("raw_output: ")
+        pp(raw_output)
+        output = json.loads(raw_output)
+        for key in output.keys():
+            if not key.startswith('hapinsp_tablevar_'):
+                raise ValueError("Invalid setup_check result - key has bad name: %s" % key)
+        return output
+
+    def _run_check_file(self, check_filename):
+        assert isdir(self.repo.check_dir)
+        assert isfile(pjoin(self.repo.check_dir, check_filename))
+        check_fqfn = pjoin(self.repo.check_dir, check_filename)
+        process = subprocess.Popen([check_fqfn], stdout=subprocess.PIPE)
+        process.wait()
+        output = process.stdout.read()
+        rc     = process.returncode
+        #return output.decode().split('\n'), rc
+        return output.decode(), rc
+
+
 
 
 
