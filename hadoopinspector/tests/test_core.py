@@ -64,6 +64,77 @@ class TestRegistry(object):
                check_scope='row',
                check_tags=[])
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+
+        reg2 = mod.Registry()
+        reg2.load_registry(pjoin(self.temp_dir, 'registry.json'))
+
+        assert reg1.full_registry == reg2.full_registry
+
+    def test_validating_bad_check(self):
+        reg1 = mod.Registry()
+        reg1.add_instance('prod1')
+        reg1.add_db('prod1', 'AssetEvent')
+        reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+               check_name='rule_uniqueness',
+               check_status='active',
+               check_type='rule',
+               check_mode='fullish',  # this is bad!
+               check_scope='row',
+               check_tags=[])
+        reg1.write(pjoin(self.temp_dir, 'registry.json'))
+        with pytest.raises(SystemExit):
+            reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+
+
+    def test_validating_bad_setup(self):
+        reg1 = mod.Registry()
+        reg1.add_instance('prod1')
+        reg1.add_db('prod1', 'AssetEvent')
+        reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+               check_name='rule_uniqueness',
+               check_status='active',
+               check_type='setup',
+               check_mode='full',  # this is bad! should be None
+               check_scope='row',  # this is bad! should be None
+               check_tags=[])
+        reg1.write(pjoin(self.temp_dir, 'registry.json'))
+        with pytest.raises(SystemExit):
+            reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+
+    def test_creating_then_loading_with_setup_and_teardown(self):
+        reg1 = mod.Registry()
+        reg1.add_instance('prod1')
+        reg1.add_db('prod1', 'AssetEvent')
+        reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'asset_setup',
+               check_name='asset_setup',
+               check_status='active',
+               check_type='setup',
+               check_mode=None,
+               check_scope=None,
+               check_tags=[])
+
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+               check_name='rule_uniqueness',
+               check_status='active',
+               check_type='rule',
+               check_mode='full',
+               check_scope='row',
+               check_tags=[])
+
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'teardown',
+               check_name='asset_teardown',
+               check_status='active',
+               check_type='setup',
+               check_mode=None,
+               check_scope=None,
+               check_tags=[])
+
+        reg1.write(pjoin(self.temp_dir, 'registry.json'))
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
 
         reg2 = mod.Registry()
         reg2.load_registry(pjoin(self.temp_dir, 'registry.json'))
@@ -75,6 +146,13 @@ class TestRegistry(object):
         reg1.add_instance('prod1')
         reg1.add_db('prod1', 'AssetEvent')
         reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'asset_setup',
+               check_name='asset_setup',
+               check_status='active',
+               check_type='setup',
+               check_mode=None,
+               check_scope=None,
+               check_tags=[])
         reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
@@ -82,6 +160,14 @@ class TestRegistry(object):
                check_mode='full',
                check_scope='row',
                check_tags=[])
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'teardown',
+               check_name='asset_teardown',
+               check_status='active',
+               check_type='setup',
+               check_mode=None,
+               check_scope=None,
+               check_tags=[])
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
         reg1.generate_db_registry('prod1', 'AssetEvent')
         assert 'check_name' in reg1.db_registry['prod1']['AssetEvent']['asset']['rule_pk1']
 
