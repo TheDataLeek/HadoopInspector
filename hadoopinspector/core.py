@@ -259,7 +259,7 @@ class CheckResults(object):
             run_start_timestamp=None,
             run_stop_timestamp=None):
         assert isnumeric(rc)
-        assert isnumeric(violations)
+        assert violations is None or isnumeric(violations), "Invalid violations: %s" % violations
         assert check_type   in ('rule', 'profile', 'setup', 'teardown')
         assert check_policy_type   in ('quality', 'consistency', 'data-management'), "invalid policy_type: %s" % check_policy_type
         assert check_unit   in ('rows', 'tables')
@@ -300,6 +300,12 @@ class CheckResults(object):
         return max_rc
 
     def get_formatted_results(self):
+        def coalesce(val1, val2):
+            if val1 is not None:
+                return val1
+            else:
+                return val2
+
         formatted_results = []
         for instance in self.results:
             for database in self.results[instance]:
@@ -307,7 +313,7 @@ class CheckResults(object):
                         for check in self.results[instance][database][table]:
                                 rec = '%s|%s|%s|%s|%s|%s' % (instance, database, table, check,
                                            self.results[instance][database][table][check]['rc'],
-                                           self.results[instance][database][table][check]['violation_cnt'])
+                                           coalesce(self.results[instance][database][table][check]['violation_cnt'], ''))
                                 formatted_results.append(rec)
         return formatted_results
 
@@ -472,36 +478,39 @@ class CheckRunner(object):
 
     def _run_setup_check(self, reg_check):
         check_fn       = self.repo.repo[reg_check['check_name']]['fqfn']
-        raw_output, rc = self._run_check_file(check_fn)
-        check_vars     = self.parse_setup_check_results(raw_output)
-        return check_vars, rc
+        raw_output, check_rc    = self._run_check_file(check_fn)
+        check_vars, internal_rc = self.parse_setup_check_results(raw_output)
+        return check_vars, max(int(check_rc), int(internal_rc))
 
     def _run_check(self, reg_check):
-        check_fn       = self.repo.repo[reg_check['check_name']]['fqfn']
-        raw_output, rc = self._run_check_file(check_fn)
-        violation_cnt  = self.parse_check_results(raw_output)
-        return violation_cnt, rc
+        check_fn           = self.repo.repo[reg_check['check_name']]['fqfn']
+        raw_output, check_rc        = self._run_check_file(check_fn)
+        violation_cnt, internal_rc  = self.parse_check_results(raw_output)
+        return violation_cnt, max(int(check_rc), int(internal_rc))
 
     def parse_check_results(self, raw_output):
         check = None
         count = 0
-        #todo: make the following json
-        for rec in raw_output:
-            if 'violation_cnt:' in rec:
-                fields = rec.split()
-                count = int(fields[1])
+        check_rc = 0
+        output = json.loads(raw_output)
+        for key in output.keys():
+            if key == 'rc':
+                internal_rc = output['rc']
+            elif key == 'violations':
+                count = output['violations']
                 assert isnumeric(count)
-        return count
+        return count, check_rc
 
     def parse_setup_check_results(self, raw_output):
         check = None
-        print("raw_output: ")
-        pp(raw_output)
+        internal_rc = None
         output = json.loads(raw_output)
         for key in output.keys():
-            if not key.startswith('hapinsp_tablevar_'):
+            if key == 'rc':
+                internal_rc = output['rc']
+            elif not key.startswith('hapinsp_tablevar_'):
                 raise ValueError("Invalid setup_check result - key has bad name: %s" % key)
-        return output
+        return output, internal_rc
 
     def _run_check_file(self, check_filename):
         assert isdir(self.repo.check_dir)
