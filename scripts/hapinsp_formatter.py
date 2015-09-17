@@ -16,19 +16,15 @@ def main():
 
 
 def transform_args(args):
+    results_dict = {}
+    results_dict["rc"] = args.rc
     if args.violation_cnt is not None:
-        results = """ {"rc": %s,
-                       "violations":%s } """ % (args.rc, args.violation_cnt)
-    else:
-        results = """ {"rc": %s, """ % args.rc
-        formatted_pairs = []
+        results_dict["violations"] = args.violation_cnt
+    elif args.kv is not None:
         for pair in args.kv:
             key, value = pair.split(':')
-            formatted_pairs.append('"%s": "%s"' % (key, value))
-        results += ','.join(formatted_pairs)
-        results += " } "
-    json_results = json.loads(results)
-    return json_results
+            results_dict[key] = value
+    return json.dumps(results_dict)
 
 
 
