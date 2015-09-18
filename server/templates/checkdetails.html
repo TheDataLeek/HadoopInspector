@@ -1,0 +1,184 @@
+{% extends "layout.html" %}
+
+{% block name %}
+    <h1><a href="/">{{ instance }}</a>>
+        <a href="/inspect/{{ instance }}">{{ database }}</a>>
+        <a href="/inspect/{{ instance }}/{{ database}}">{{ table }}</a>>
+        <a href="/inspect/{{ instance }}/{{ database}}/{{ table }}">{{ check }}</a>>
+        Details
+    </h1>
+    <p>{{ desc }}</p>
+{% endblock %}
+
+{% block graph %}
+<div class="row">
+    <div class="col-sm-8">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">History</h3>
+            </div>
+            <div class="panel-body">
+                <div id="chart">
+                    <ul class="nav nav-tabs" role="tablist">
+                      <li role="presentation" class="active">
+                          <a href="#week" aria-controls="week" role="tab" data-toggle="tab" id="weekButton">Week</a>
+                      </li>
+                      <li role="presentation">
+                          <a href="#month" aria-controls="month" role="tab" data-toggle="tab" id="monthButton">Month</a>
+                      </li>
+                      <li role="presentation">
+                          <a href="#year" aria-controls="year" role="tab" data-toggle="tab" id="yearButton">Year</a>
+                      </li>
+                    </ul>
+                    <!-- Tab panes -->
+                    <div class="tab-content">
+                      <div role="tabpanel" class="tab-pane active" id="week">
+                          <svg style="height:300px"></svg>
+                      </div>
+                      <div role="tabpanel" class="tab-pane" id="month">
+                          <svg style="height:300px;"></svg>
+                      </div>
+                      <div role="tabpanel" class="tab-pane" id="year">
+                          <svg style="height:300px;"></svg>
+                      </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Tables Affected</h3>
+            </div>
+            <div class="panel-body">
+                <table data-toggle="table" {% if tables|length > 5 %}data-height="370"{% endif %} data-sort-name="id" data-sort-order="asc">
+                    <thead>
+                      <tr>
+                        <th data-field="id" data-align="left" data-sortable="true">#</th>
+                        <th data-field="table" data-align="left" data-sortable="true">Table</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        {% for table in tables %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ table }}';">
+                                    {{ table }}
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tabletitle %}
+<h4>Raw Run History</h4>
+{% endblock %}
+
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="check_name" data-align="left" data-sortable="true">Check Name</th>
+    <th data-field="check_type" data-align="left" data-sortable="true">Check Type</th>
+    <th data-field="check_policy_type" data-align="left" data-sortable="true">Check Policy Type</th>
+    <th data-field="check_mode" data-align="left" data-sortable="true">Check Mode</th>
+    <th data-field="check_unit" data-align="left" data-sortable="true">Check Unit</th>
+    <th data-field="check_status" data-align="left" data-sortable="true">Check Status</th>
+    <th data-field="run_start_timestamp" data-align="left" data-sortable="true">Start Time</th>
+    <th data-field="run_stop_timestamp" data-align="left" data-sortable="true">Stop Time</th>
+    <th data-field="check_rc" data-align="left" data-sortable="true">Check Return Code</th>
+    <th data-field="check_scope" data-align="left" data-sortable="true">Check Scope</th>
+    <th data-field="check_severity_score" data-align="left" data-sortable="true">Check Severity Score</th>
+    <th data-field="check_violation_cnt" data-align="left" data-sortable="true">Check Violation Count</th>
+  </tr>
+</thead>
+<tbody>
+{% for row in raw_history %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ row[3] }}</td>
+        <td>{{ row[4] }}</td>
+        <td>{{ row[5] }}</td>
+        <td>{{ row[6] }}</td>
+        <td>{{ row[7] }}</td>
+        <td>{{ row[8] }}</td>
+        <td>{{ row[9] }}</td>
+        <td>{{ row[10] }}</td>
+        <td>{{ row[11] }}</td>
+        <td>{{ row[12] }}</td>
+        <td>{{ row[13] }}</td>
+        <td>{{ row[14] }}</td>
+    </tr>
+{% endfor %}
+</tbody>
+{% endblock %}
+
+{% block tablefoot %}
+{% endblock %}
+
+{% block js %}
+<script>
+function convertDataWeek() {
+    var data = [
+    {% for value in history['week'] %}
+        {
+            x:new Date('{{ value[0] }}'),
+            y:{{ value[1] }}
+        }{% if loop.index != history['week']|length %},{% endif %}
+    {% endfor %}
+    ];
+
+    return [
+        {
+            values: data,
+            key: '{{ check }}',
+            color: '{{ colors[(loop.index - 1) % 9] }}'
+        }
+    ];
+};
+function convertDataMonth() {
+    var data = [
+    {% for value in history['month'] %}
+        {
+            x:new Date('{{ value[0] }}'),
+            y:{{ value[1] }}
+        }{% if loop.index != history['month']|length %},{% endif %}
+    {% endfor %}
+    ];
+
+    return [
+        {
+            values: data,
+            key: '{{ check }}',
+            color: '{{ colors[(loop.index - 1) % 9] }}'
+        }
+    ];
+};
+function convertDataYear() {
+    var data = [
+    {% for value in history['year'] %}
+        {
+            x:new Date('{{ value[0] }}'),
+            y:{{ value[1] }}
+        }{% if loop.index != history['year']|length %},{% endif %}
+    {% endfor %}
+    ];
+
+    return [
+        {
+            values: data,
+            key: '{{ check }}',
+            color: '{{ colors[(loop.index - 1) % 9] }}'
+        }
+    ];
+};
+</script>
+{% endblock %}

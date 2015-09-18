@@ -1,6 +1,6 @@
 {
   "logfile":"./hadoopqa.log",
   "testdir":"./tests",
-  "db":"hadoopqa.db",
+  "db":"results.sqlite",
   "port":9997
 }

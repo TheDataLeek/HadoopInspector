@@ -2,3 +2,6 @@
 *.swp
 *.db
 *.log
+*.pyc
+*egg-info*
+*.sqlite

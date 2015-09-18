@@ -37,7 +37,8 @@ limited to traditional quality tests, but should be able to test for compliance 
 ##Current Status
 
 Our initial focus has been on building a demo to help us validate ideas, and build some of our UIs.  This includes:
-    - hadoopinspector-demogen - which can generate 50,000+ check results against a hypothetical user hadoop environment
+    - hadoopinspector-demogen.py - which can generate 50,000+ check results against a hypothetical user hadoop environment
+    - hadoopinspector-runner.py - which runs checks from repository and writes results
     - server - which runs a website that allows the user to analyze these demo results
     - report - will produces a pdf check result summary report
 
@@ -60,3 +61,22 @@ not rejected).
 References:
 - https://en.wikipedia.org/wiki/Levenshtein_distance
 - https://en.wikipedia.org/wiki/Moving_average#Weighted_moving_average
+
+
+##Installation
+
+* ideally create a dedicated virtualenv
+* pip install hadoopinspector
+
+##Development
+
+* py.test within a virtualenv for python3.4 needs a little help - so run it with:
+    - $ python3 -m py.test
+* to simplify this with tox, create a packaged file of tests:
+    - $ python3 -m py.test --genscript=runtests.py
+    - $ chmod +x runtests.py
+    - $ cp runtests.py ../bin
+    - from there it's referenced by tox.ini, and will get run when you run tox
+
+
+

@@ -1,6 +1,9 @@
 Hadoop\_Inspector
 =================
 
+For a more detailed analysis, please reference `the pdf
+report <https://github.com/willzfarmer/HadoopInspector/blob/master/proposal/HadoopInspector.pdf>`__
+
 Background
 ----------
 
@@ -45,11 +48,12 @@ Current Status
 --------------
 
 Our initial focus has been on building a demo to help us validate ideas,
-and build some of our UIs. This includes: - hadoopinspector-demogen -
+and build some of our UIs. This includes: - hadoopinspector-demogen.py -
 which can generate 50,000+ check results against a hypothetical user
-hadoop environment - server - which runs a website that allows the user
-to analyze these demo results - report - will produces a pdf check
-result summary report
+hadoop environment - hadoopinspector-runner.py - which runs checks from
+repository and writes results - server - which runs a website that
+allows the user to analyze these demo results - report - will produces a
+pdf check result summary report
 
 Packaged Checks - reusable tests
 --------------------------------
@@ -69,3 +73,25 @@ as the data is not rejected).
 
 References: - https://en.wikipedia.org/wiki/Levenshtein\_distance -
 https://en.wikipedia.org/wiki/Moving\_average#Weighted\_moving\_average
+
+Installation
+------------
+
+-  ideally create a dedicated virtualenv
+-  pip install hadoopinspector
+
+Development
+-----------
+
+-  py.test within a virtualenv for python3.4 needs a little help - so
+   run it with:
+
+   -  $ python3 -m py.test
+
+-  to simplify this with tox, create a packaged file of tests:
+
+   -  $ python3 -m py.test --genscript=runtests.py
+   -  $ chmod +x runtests.py
+   -  $ cp runtests.py ../bin
+   -  from there it's referenced by tox.ini, and will get run when you
+      run tox

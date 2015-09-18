@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+
+{% block name %}
+<h1><a href="/">{{ instance }}</a>><a href="/inspect/{{ instance }}">{{ database }}</a>>Tables</h1>
+{% endblock %}
+
+{% block table %}
+<thead>
+  <tr>
+    <th data-field="id" data-align="left" data-sortable="true">#</th>
+    <th data-field="name" data-align="left" data-sortable="true">Name</th>
+    <th data-field="starttime" data-align="left" data-sortable="true">Start Time</th>
+    <th data-field="stoptime" data-align="left" data-sortable="true">Stop Time</th>
+    <th data-field="status" data-align="left" data-sortable="true">Status</th>
+    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
+    <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
+    <th data-field="partitions" data-align="left" data-sortable="true">Partitions</th>
+  </tr>
+</thead>
+<tbody>
+    {% for name in names %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ instance }}/{{ database }}/{{ name }}';">
+                {{ name }}
+            </button>
+        </td>
+        <td>Just Then</td>
+        <td>Just Now</td>
+        <td>
+            <h4>
+            {% if metadata[name]['passing'] == 0 %}
+                <span class="label label-success">
+                    Passing
+                </span>
+            {% else %}
+                <span class="label label-danger">
+                    Failing
+                </span>
+            {% endif %}
+            </h4>
+        </td>
+        <td>404</td>
+        <td>{{ metadata[name]['passing'] }}</td>
+        <td>1</td>
+    </tr>
+    {% endfor %}
+</tbody>
+{% endblock %}
+
+{% block js %}
+<script>
+function convertDataWeek() {
+{% for name in names %}
+    var {{ name }} = [
+    {% for row in history[name]['week'] %}
+        {
+            x:new Date('{{ row[0] }}'),
+            y:{{ row[1] }}
+        }{% if loop.index != metadata[name]['weeklen'] %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for name in names %}
+        {
+            values: {{ name }},
+            key: '{{ name }}',
+            color: '{{ colors[loop.index % 9] }}'
+        } {% if loop.index != names|length %},{% endif %}
+        {% endfor %}
+    ];
+};
+function convertDataMonth() {
+{% for name in names %}
+    var {{ name }} = [
+    {% for row in history[name]['month'] %}
+        {
+            x:new Date('{{ row[0] }}'),
+            y:{{ row[1] }}
+        }{% if loop.index != metadata[name]['monthlen'] %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for name in names %}
+        {
+            values: {{ name }},
+            key: '{{ name }}',
+            color: '{{ colors[loop.index % 9] }}'
+        } {% if loop.index != names|length %},{% endif %}
+        {% endfor %}
+    ];
+};
+function convertDataYear() {
+{% for name in names %}
+    var {{ name }} = [
+    {% for row in history[name]['year'] %}
+        {
+            x:new Date('{{ row[0] }}'),
+            y:{{ row[1] }}
+        }{% if loop.index != metadata[name]['yearlen'] %},{% endif %}
+    {% endfor %}
+    ];
+{% endfor %}
+
+    return [
+        {% for name in names %}
+        {
+            values: {{ name }},
+            key: '{{ name }}',
+            color: '{{ colors[loop.index % 9] }}'
+        } {% if loop.index != names|length %},{% endif %}
+        {% endfor %}
+    ];
+};
+</script>
+{% endblock %}
