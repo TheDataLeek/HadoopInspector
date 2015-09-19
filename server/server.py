@@ -3,8 +3,6 @@
 import sys, os
 import json
 import sqlite3
-import numpy as np
-import random
 import datetime
 from flask import Flask, render_template, Markup, request
 
