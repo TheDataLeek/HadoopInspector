@@ -1,21 +1,15 @@
 #!/usr/bin/env python2.7
 
 import sys
-import sqlite3
 import random
 import Levenshtein
-import threading
-import Queue
 
 def main():
-    conn = sqlite3.connect(':memory:')
-    testdb = TestDatabase(conn)
-    testdb.insert_bad_row('classes')
-    testdb.insert_bad_row('characters')
-    test_levenshtein_distances(testdb, 'classes')
-    test_levenshtein_distances(testdb, 'characters')
+    rows = [[random.randint(0, 10) if (j % 2) == 0 else 'test string' for i in range(10)] for j in range(1000)]
+    cma = levenshtein_distances(rows)
+    print(cma)
 
-def test_levenshtein_distances(database, table):
+def levenshtein_distances(rows):
     """
     This test calculates a weighted rolling levenshtein distance over the rows
     to determine statistical similarity.
@@ -25,73 +19,18 @@ def test_levenshtein_distances(database, table):
     https://en.wikipedia.org/wiki/Levenshtein_distance
     https://en.wikipedia.org/wiki/Moving_average
 
-    TODO: Add option for exponential WMA
+    TODO: Add option for WMA
     """
-    results = Queue.Queue()
-    database.cursor.execute('PRAGMA table_info({})'.format(table))
-    tables = [t[1] for t in database.cursor.fetchall()]
-
-    def column_levenshtein_rolling_average(raw_rows):
-        rows = [t[0] for t in rows]
-        distances = [Levenshtein.distance(rows[i], rows[i - 1]) for i in range(1, len(rows))]  # i'th is p_m
-        total = 0
-        for n in range(1, len(rows)):
-            p = distances[i]  # i'th p == p_m
+    cma = [v for v in rows[0]]
+    n = 1
+    for i in range(1, len(rows)):
+        for j in range(len(rows[0])):
+            value = Levenshtein.distance(str(rows[i][j]), str(rows[i - 1][j]))
+            cma[j] = (value + (n * cma[j])) / (n + 1)
+        n += 1
+    return cma
 
 
-    threads = []
-    for tablename in tables:
-        database.cursor.execute('SELECT {} FROM {}'.format(tablename, table))
-        threads.append(threading.Thread(target=column_levenshtein_rolling_average,
-                                        args=(database.cursor.fetchall(),)))
-    [t.start() for t in threads]
-    [t.join() for t in threads]
-
-
-class TestDatabase(object):
-    def __init__(self, connection):
-        self.conn = connection
-        self.cursor = self.conn.cursor()
-
-        self._generate_tables()
-        self._generate_data()
-
-    def _generate_tables(self):
-        self.cursor.execute(
-            ('CREATE TABLE classes('
-                'id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
-                'name STRING,'
-                'desc STRING'
-            ')'))
-        self.cursor.execute(
-            ('CREATE TABLE characters('
-                'id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
-                'name STRING,'
-                'class INTEGER,'
-                'FOREIGN KEY(class) REFERENCES classes(id)'
-            ')'))
-
-    def _generate_data(self):
-        self.cursor.executemany('INSERT INTO classes(name, desc) VALUES(?, ?)',
-            [('Fighter', 'The default fighting class'),
-                ('Cleric', 'A healing class'),
-                ('Paladin', 'Fighting clerics'),
-                ('Thief', 'One who steals from others'),
-                ('Assassin', 'One who kills others for money'),
-                ('Barbarian', 'A strong clumsy fighter'),
-                ('Mage', 'A non fighting spellcaster')])
-        self.cursor.executemany('INSERT INTO characters(name, class) VALUES(?, ?)',
-                [('Bob the Mighty', 1),
-                    ('Alfred the Butler', 4),
-                    ('Batman', 5)])
-
-    def insert_bad_row(self, table):
-        if table == 'classes':
-            self.cursor.execute('INSERT INTO classes(name, desc) VALUES(?, ?)',
-                    (str(random.randint(10, 50000)), str(random.randint(0, 20))))
-        elif table == 'characters':
-            self.cursor.execute('INSERT INTO characters(name, class) VALUES(?, ?)',
-                    (str(random.randint(10, 50000)), str(random.randint(97, 120))))
 
 
 
