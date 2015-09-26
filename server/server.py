@@ -52,10 +52,18 @@ def find_file(path, file_to_find):
             if filename == file_to_find:
                 return os.path.join(dirname, filename)
 
+
+def get_database():
+    database_file = find_file('.', config['db']) or find_file('..', config['db'])
+    if database_file is None:
+        print("Missing Database")
+        sys.exit(0)
+    return database_file
+
 #TODO: Make this function more configurable
 #TODO: Test this function!
 def submit_query(query_string, args=None, flat=False):
-    database_file = find_file('.', config['db']) or find_file('..', config['db'])
+    database_file = get_database()
     connection = sqlite3.connect(database_file)
     cursor = connection.cursor()
     if args is None:
@@ -82,11 +90,19 @@ def reformat_time(s, input_format='%Y-%m-%d %H:%M:%S', output_format='%Y-%m-%d')
     return datetime.datetime.strftime(datetime.datetime.strptime(s, input_format), output_format)
 
 
+def instance_description(names):
+    database_file = get_database()
+    connection = sqlite3.connect(database_file)
+    cursor = connection.cursor()
+
+
+
 @app.route('/', methods=['GET', 'POST'])
 def root():
     # First get all instane names
     get_all_names = lambda : submit_query('SELECT DISTINCT instance_name FROM check_results', flat=True)
     names = get_all_names()
+    instance_description(names)
     # Apply search if applicable.
     if request.method == 'POST':
         # If empty search, reset to full
