@@ -9,12 +9,8 @@
   <tr>
     <th data-field="id" data-align="left" data-sortable="true">#</th>
     <th data-field="name" data-align="left" data-sortable="true">Name</th>
-    <th data-field="starttime" data-align="left" data-sortable="true">Start Time</th>
-    <th data-field="stoptime" data-align="left" data-sortable="true">Stop Time</th>
     <th data-field="status" data-align="left" data-sortable="true">Status</th>
-    <th data-field="rc" data-align="left" data-sortable="true">Return Code</th>
     <th data-field="violations" data-align="left" data-sortable="true">Violations</th>
-    <th data-field="partitions" data-align="left" data-sortable="true">Partitions</th>
   </tr>
 </thead>
 <tbody>
@@ -26,8 +22,6 @@
                 {{ name }}
             </button>
         </td>
-        <td>Just Then</td>
-        <td>Just Now</td>
         <td>
             <h4>
             {% if metadata[name]['passing'] == 0 %}
@@ -41,9 +35,7 @@
             {% endif %}
             </h4>
         </td>
-        <td>404</td>
         <td>{{ metadata[name]['passing'] }}</td>
-        <td>1</td>
     </tr>
     {% endfor %}
 </tbody>
