@@ -179,7 +179,7 @@ class TestRegistry(object):
                check_type='setup',
                check_mode=None,  # this is bad! should be None
                check_scope=None,  # this is bad! should be None
-               hapinsp_checkvar_foo='bar')
+               hapinsp_checkcustom_foo='bar')
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
 

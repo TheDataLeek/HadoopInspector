@@ -24,7 +24,7 @@ class Registry(object):
                         "check_mode":   "full",
                         "check_scope":  "row",
                         "check_status": "active"
-                        "hapinsp_checkvar_cols": date_id
+                        "hapinsp_checkcustom_cols": date_id
                     }
                 }
             }
@@ -135,7 +135,7 @@ class Registry(object):
                'check_mode':    check_mode,
                'check_scope':   check_scope }
         for key in checkvars:
-            if not key.startswith('hapinsp_checkvar_'):
+            if not key.startswith('hapinsp_checkcustom_'):
                 print("Invalid registry checkvar: %s" % key)
                 sys.exit(1)
             registry[instance][db][table][check][key] = checkvars[key]
@@ -465,8 +465,11 @@ class CheckRunner(object):
         self.prior_table_vars = []
 
     def add_db_var(self, key, value):
-        self.db_vars.append((key, value))
-        os.environ[key] = value
+        if not key.startswith('hapinsp_'):
+            print("Error: invalid table_var of: %s" % key)
+        else:
+            self.db_vars.append((key, value))
+            os.environ[key] = value
 
     def drop_db_vars(self):
         uniq_keys = { x[0] for x in self.db_vars }
@@ -504,8 +507,8 @@ class CheckRunner(object):
     def add_check_var(self, key, value):
         if key == 'hapinsp_check_mode':
             pass
-        elif not key.startswith('hapinsp_checkvar_'):
-            print("Invalid checkvar: %s" % key)
+        elif not key.startswith('hapinsp_checkcustom_'):
+            print("Invalid checkcustom var: %s" % key)
             return
         self.check_vars.append((key, value))
         os.environ[key] = value
@@ -569,7 +572,7 @@ class CheckRunner(object):
 
         # add envvars specific to this check from the registry
         for key, val in reg_check.items():
-            if key.startswith('hapinsp_checkvar_'):
+            if key.startswith('hapinsp_checkcustom_'):
                 self.add_check_var(key, val)
         self.add_check_var('hapinsp_check_mode', reg_check['check_mode'])
 
@@ -614,7 +617,7 @@ class CheckRunner(object):
 
         # add envvars specific to this check from the registry
         for key, val in reg_check.items():
-            if key.startswith('hapinsp_checkvar_'):
+            if key.startswith('hapinsp_checkcustom_'):
                 self.add_check_var(key, val)
         self.add_check_var('hapinsp_check_mode', reg_check['check_mode'])
 
