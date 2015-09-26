@@ -3,15 +3,15 @@
 import os, sys, time, datetime, subprocess
 import json
 from pprint import pprint as pp
+import copy
 import validictory
-from os.path import isdir, isfile, exists
+from os.path import isdir, isfile, exists, dirname, basename
 from os.path import join as pjoin
 import sqlite3
 
 
 
 class Registry(object):
-
     """ Sample Config File, with just a single check for a single table
     for a single db for a single instance:
     {
@@ -21,10 +21,10 @@ class Registry(object):
                     "rule_pk1": {       # check-name
                         "check_type":   "rule",
                         "check_name":   "rule_uniqueness",
-                        "check_tags":   [],
                         "check_mode":   "full",
                         "check_scope":  "row",
                         "check_status": "active"
+                        "hapinsp_checkvar_cols": date_id
                     }
                 }
             }
@@ -111,7 +111,7 @@ class Registry(object):
         return registry[instance][db][table].keys()
 
     def add_check(self, instance, db, table, check, check_name, check_status, check_type,
-                  check_mode, check_scope, check_tags, registry=None):
+                  check_mode, check_scope, registry=None, **checkvars):
         """ Add a check structure to registry.  If no registry is provided,
             then it'll add this to the full_registry.
         """
@@ -133,8 +133,13 @@ class Registry(object):
                'check_status':  check_status,
                'check_type':    check_type,
                'check_mode':    check_mode,
-               'check_scope':   check_scope,
-               'check_tags':    []  }
+               'check_scope':   check_scope }
+        for key in checkvars:
+            if not key.startswith('hapinsp_checkvar_'):
+                print("Invalid registry checkvar: %s" % key)
+                sys.exit(1)
+            registry[instance][db][table][check][key] = checkvars[key]
+
 
     def write(self, filename=None, registry=None):
         if registry is None:
@@ -171,8 +176,7 @@ class Registry(object):
                     "check_mode":   {"type": "string",
                                     "enum": ["full", "part"] },
                     "check_scope":  {"type": "string",
-                                    "enum": ["row", "table", "database"] },
-                    "check_tags":   {"type": "array"}
+                                    "enum": ["row", "table", "database"] }
                            }
         }
         setupteardown_check_schema = {
@@ -184,8 +188,7 @@ class Registry(object):
                     "check_type":   {"type": "string",
                                     "enum": ["setup", "teardown"] },
                     "check_mode":   {"type": "null"},
-                    "check_scope":  {"type": "null"},
-                    "check_tags":   {"type": "array"}
+                    "check_scope":  {"type": "null"}
                            }
         }
 
@@ -232,7 +235,6 @@ class CheckRepo(object):
     """ Maintains information about actual checks.
 
     """
-
     def __init__(self, check_dir):
         self.check_dir = check_dir
         self.repo      = {}
@@ -244,9 +246,11 @@ class CheckRepo(object):
 
 class CheckResults(object):
 
-    def __init__(self):
+    def __init__(self, db_fqfn=None):
+        self.db_fqfn = db_fqfn
         self.start_dt = datetime.datetime.utcnow()
         self.results = {}
+        self.setup_results = {}
 
     def add(self, instance, database, table, check, violations, rc,
             check_status=None,
@@ -257,7 +261,8 @@ class CheckResults(object):
             check_scope=-1,
             check_severity_score=-1,
             run_start_timestamp=None,
-            run_stop_timestamp=None):
+            run_stop_timestamp=None,
+            setup_vars=None):
         assert isnumeric(rc)
         assert violations is None or isnumeric(violations), "Invalid violations: %s" % violations
         assert check_type   in ('rule', 'profile', 'setup', 'teardown')
@@ -277,17 +282,18 @@ class CheckResults(object):
         if check not in self.results[instance][database][table]:
             self.results[instance][database][table][check] = {}
 
-        self.results[instance][database][table][check]['violation_cnt'] = violations
-        self.results[instance][database][table][check]['rc']            = rc
-        self.results[instance][database][table][check]['check_status']  = check_status
-        self.results[instance][database][table][check]['check_unit']    = check_unit
-        self.results[instance][database][table][check]['check_type']    = check_type
+        self.results[instance][database][table][check]['violation_cnt']        = violations
+        self.results[instance][database][table][check]['rc']                   = rc
+        self.results[instance][database][table][check]['check_status']         = check_status
+        self.results[instance][database][table][check]['check_unit']           = check_unit
+        self.results[instance][database][table][check]['check_type']           = check_type
         self.results[instance][database][table][check]['check_policy_type']    = check_type
         self.results[instance][database][table][check]['check_mode']           = check_mode
         self.results[instance][database][table][check]['check_scope']          = check_scope
         self.results[instance][database][table][check]['check_severity_score'] = check_severity_score
         self.results[instance][database][table][check]['run_start_timestamp']  = run_start_timestamp
         self.results[instance][database][table][check]['run_stop_timestamp']   = run_stop_timestamp
+        self.results[instance][database][table][check]['setup_vars']           = '' if setup_vars is None else json.dumps(setup_vars)
 
     def get_max_rc(self):
         max_rc = 0
@@ -306,59 +312,115 @@ class CheckResults(object):
             else:
                 return val2
 
+        pp(self.results)
         formatted_results = []
-        for instance in self.results:
-            for database in self.results[instance]:
-                for table in self.results[instance][database]:
-                        for check in self.results[instance][database][table]:
-                                rec = '%s|%s|%s|%s|%s|%s' % (instance, database, table, check,
-                                           self.results[instance][database][table][check]['rc'],
-                                           coalesce(self.results[instance][database][table][check]['violation_cnt'], ''))
-                                formatted_results.append(rec)
+        for inst in self.results:
+            for db in self.results[inst]:
+                for tab in sorted(self.results[inst][db]):
+                    for setup_check in sorted({ x for x in self.results[inst][db][tab]
+                                       if self.results[inst][db][tab][x]['check_type'] == 'setup' }):
+                        rec = '%s|%s|%s|%s|%s|%s' % (tab, setup_check,
+                                    self.results[inst][db][tab][setup_check]['check_mode'],
+                                    self.results[inst][db][tab][setup_check]['rc'],
+                                    coalesce(self.results[inst][db][tab][setup_check]['violation_cnt'], ''),
+                                    coalesce(self.results[inst][db][tab][setup_check]['setup_vars'], '') )
+                        formatted_results.append(rec)
+
+                    for check in sorted({ x for x in self.results[inst][db][tab]
+                                 if self.results[inst][db][tab][x]['check_type'] not in ('setup', 'teardown') }):
+                        rec = '%s|%s|%s|%s|%s|%s' % (tab, check,
+                                    self.results[inst][db][tab][check]['check_mode'],
+                                    self.results[inst][db][tab][check]['rc'],
+                                    coalesce(self.results[inst][db][tab][check]['violation_cnt'], ''),
+                                    coalesce(self.results[inst][db][tab][check]['setup_vars'], '') )
+                        formatted_results.append(rec)
         return formatted_results
 
-    def write_to_sqlite(self, fqfn):
+    def write_to_sqlite(self):
         """ Writes all check results at once to a sqlite database.
         #todo: check if this date already been tested, and if so, delete those prior results.
         #todo: add column to hold partitioning keys for incremental testing
         #todo: add "logical_delete" column for the deletes
         """
-        if not isfile(fqfn):
-            create_sqlite_db(fqfn)
+        if self.db_fqfn is None:
+            abort("Error: no sqlite file name provided to CheckResults")
+        if not isfile(self.db_fqfn):
+            print("warning: sqlitedb not found - will create database")
+            create_sqlite_db(self.db_fqfn)
+
+        conn = sqlite3.connect(self.db_fqfn)
+        if not istable(conn, 'check_results'):
+            print("warning: no check_results table found - will create database")
+            create_sqlite_db(self.db_fqfn)
 
         stop_dt = datetime.datetime.utcnow()
-
-        conn = sqlite3.connect(fqfn)
+        run_id  = 0
         cur  = conn.cursor()
-        recs = []
+        check_recs = []
 
-        sql  = """INSERT INTO check_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  """
-        for instance in self.results:
-            for database in self.results[instance]:
-                for table in self.results[instance][database]:
-                    for check in self.results[instance][database][table]:
-                         recs.append( (instance, database, table, check,
-                                       self.results[instance][database][table][check]['check_type'],
-                                       self.results[instance][database][table][check]['check_policy_type'],
-                                       self.results[instance][database][table][check]['check_mode'],
-                                       self.results[instance][database][table][check]['check_unit'],
-                                       self.results[instance][database][table][check]['check_status'],
-                                       (self.results[instance][database][table][check]['run_start_timestamp'] or self.start_dt),
-                                       (self.results[instance][database][table][check]['run_stop_timestamp']  or stop_dt),
-                                       self.results[instance][database][table][check]['rc'],
-                                       self.results[instance][database][table][check]['check_scope'],
-                                       self.results[instance][database][table][check]['check_severity_score'],
-                                       self.results[instance][database][table][check]['violation_cnt'], ) )
-        if recs:
-            cur.executemany(sql, recs)
+        for inst in self.results:
+            for db in self.results[inst]:
+                for table in self.results[inst][db]:
+                    for check in self.results[inst][db][table]:
+                        check_recs.append( (inst, db, table, check,
+                                self.results[inst][db][table][check]['check_type'],
+                                self.results[inst][db][table][check]['check_policy_type'],
+                                self.results[inst][db][table][check]['check_mode'],
+                                self.results[inst][db][table][check]['check_unit'],
+                                self.results[inst][db][table][check]['check_status'],
+                                run_id,
+                                (self.results[inst][db][table][check]['run_start_timestamp'] or self.start_dt),
+                                (self.results[inst][db][table][check]['run_stop_timestamp']  or stop_dt),
+                                self.results[inst][db][table][check]['rc'],
+                                self.results[inst][db][table][check]['check_scope'],
+                                self.results[inst][db][table][check]['check_severity_score'],
+                                self.results[inst][db][table][check]['violation_cnt'],
+                                self.results[inst][db][table][check]['setup_vars'] ) )
+
+        if check_recs:
+            check_sql  = """INSERT INTO check_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  """
+            cur.executemany(check_sql, check_recs)
             conn.commit()
+
         conn.close()
 
 
-def create_sqlite_db(fqfn):
-    conn = sqlite3.connect(fqfn)
-    cmd = """ \
-            CREATE TABLE check_results  ( \
+    def get_prior_setup_vars(self, inst, db, table, setup_check):
+        sql  = ("WITH maxtime AS ( "
+                "    SELECT MAX(run_start_timestamp) AS run_start_timestamp"
+                "    FROM check_results "
+                "    WHERE instance_name = '{inst}' "
+                "      AND database_name = '{db}' "
+                "      AND table_name    = '{tb}' "
+                "      AND check_name    = '{cn}' "
+                "      AND check_rc      = 0 "
+                ")"
+                "SELECT env_vars "
+                "FROM check_results  cr "
+                "    INNER JOIN maxtime mt "
+                "       ON cr.run_start_timestamp = mt.run_start_timestamp "
+                "WHERE instance_name = '{inst}' "
+                "  AND database_name = '{db}' "
+                "  AND table_name    = '{tb}' "
+                "  AND check_name    = '{cn}' ")
+        conn = sqlite3.connect(self.db_fqfn)
+        c    = conn.cursor()
+        try:
+            c.execute(sql.format(inst=inst, db=db, tb=table, cn=setup_check))
+        except sqlite3.OperationalError as e:
+            pass
+        results = c.fetchall()
+        conn.commit()
+        conn.close()
+        if results == []:
+            return None
+        else:
+            return results[0][0]
+
+
+def create_sqlite_db(db_fqfn):
+    check_results_cmd = """ \
+         CREATE TABLE check_results  ( \
             instance_name       TEXT,  \
             database_name       TEXT,  \
             table_name          TEXT,  \
@@ -368,17 +430,338 @@ def create_sqlite_db(fqfn):
             check_mode          TEXT,  \
             check_unit          TEXT,  \
             check_status        TEXT,  \
+            run_id              INT,       \
             run_start_timestamp TIMESTAMP, \
             run_stop_timestamp  TIMESTAMP, \
             check_rc            INT,   \
             check_scope         INT,   \
-            check_severity_score INT,   \
-            check_violation_cnt INT ) """
+            check_severity_score INT,  \
+            check_violation_cnt INT,   \
+            env_vars              ) """
+
+    conn = sqlite3.connect(db_fqfn)
     c    = conn.cursor()
-    c.execute(cmd)
+    c.execute(check_results_cmd)
     conn.commit()
     conn.close()
+    print("results.sqlite database successfully created")
 
+
+
+
+class CheckRunner(object):
+
+    def __init__(self, registry, check_repo, check_results, instance, database):
+        """
+        """
+        self.repo     = check_repo
+        self.registry = registry
+        self.results  = check_results
+        self.instance = instance
+        self.database = database
+        self.db_vars = []
+        self.check_vars = []
+        self.table_vars = []
+        self.prior_table_vars = []
+
+    def add_db_var(self, key, value):
+        self.db_vars.append((key, value))
+        os.environ[key] = value
+
+    def drop_db_vars(self):
+        uniq_keys = { x[0] for x in self.db_vars }
+        for key in uniq_keys:
+            os.environ.pop(key)
+        self.db_vars = []
+
+    def add_table_var(self, key, value):
+        if not key.startswith('hapinsp_table'):
+            print("Error: invalid table_var of: %s" % key)
+        else:
+            self.table_vars.append((key, value))
+            os.environ[key] = value
+
+    def drop_table_vars(self):
+        uniq_keys = { x[0] for x in self.table_vars }
+        for key in uniq_keys:
+            os.environ.pop(key)
+        self.table_vars = []
+
+    def add_prior_table_var(self, key, value):
+        if not key.startswith('hapinsp_table'):
+            print("Error: invalid table_var of: %s" % key)
+        else:
+            adj_key = key + '_prior'
+            self.prior_table_vars.append((adj_key, value))
+            os.environ[adj_key] = value
+
+    def drop_prior_table_vars(self):
+        uniq_keys = { x[0] for x in self.prior_table_vars }
+        for key in uniq_keys:
+            os.environ.pop(key)
+        self.prior_table_vars = []
+
+    def add_check_var(self, key, value):
+        if key == 'hapinsp_check_mode':
+            pass
+        elif not key.startswith('hapinsp_checkvar_'):
+            print("Invalid checkvar: %s" % key)
+            return
+        self.check_vars.append((key, value))
+        os.environ[key] = value
+
+    def drop_check_vars(self):
+        uniq_keys = { x[0] for x in self.check_vars }
+        for key in uniq_keys:
+            os.environ.pop(key)
+        self.check_vars = []
+
+
+    def run_checks_for_tables(self, table_override):
+        """ Runs checks on all tables, or just one if a non-None table value is provided.
+        """
+        inst = self.instance
+        db   = self.database
+        for table in self.registry.db_registry[inst][db]:
+
+            self.add_table_var('hapinsp_table', table)
+            table_status = 'active'
+
+            #------  setup checks must happen first.   -----------------------------
+            for setup_check in sorted([ x for x in self.registry.db_registry[inst][db][table]
+                                       if self.registry.db_registry[inst][db][table][x]['check_type'] == 'setup' ]):
+                reg_check = self.registry.db_registry[inst][db][table][setup_check]
+                self._run_setup_check(table, setup_check, reg_check)
+
+            # bypass checks if setup marked this table inactive:
+            if table_status == 'inactive':
+                continue
+
+            # regular checks (could be either rules or prfiles)
+            #------  regular checks (rules or profiles) can now run  -----------------------------
+            for check in sorted([ x for x in self.registry.db_registry[inst][db][table]
+                                  if self.registry.db_registry[inst][db][table][x]['check_type']
+                                     not in ('setup', 'teardown') ]):
+                reg_check = self.registry.db_registry[inst][db][table][check]
+                self._run_check(table, check, reg_check)
+
+            self.drop_table_vars()
+
+        self.results.write_to_sqlite()
+
+
+    def _run_setup_check(self, table, setup_check, reg_check):
+
+        # drop out if inactive:
+        if reg_check['check_status'] == 'inactive':
+            self.results.add(self.instance, self.database, table, setup_check,
+                             count=None, rc=None, check=reg_check['check_status'],
+                             check_type='setup', setup_vars='')
+            return
+
+        # write prior setup to env:
+        prior_setup_vars_string = self.results.get_prior_setup_vars(self.instance, self.database, table, setup_check)
+        if prior_setup_vars_string:
+            prior_setup_vars = SetupVars(prior_setup_vars_string)
+            for key, val in prior_setup_vars.tablecustom_vars.items():
+                self.add_prior_table_var(key, val)
+            self.add_prior_table_var('hapinsp_tablecustom_internal_rc_prior', prior_setup_vars.internal_rc)
+
+        # add envvars specific to this check from the registry
+        for key, val in reg_check.items():
+            if key.startswith('hapinsp_checkvar_'):
+                self.add_check_var(key, val)
+        self.add_check_var('hapinsp_check_mode', reg_check['check_mode'])
+
+        # execute the setup check
+        try:
+            check_fn           = self.repo.repo[reg_check['check_name']]['fqfn']
+        except KeyError:
+            print("Error: registry check not found: %s" % reg_check['check_name'])
+            sys.exit(1)
+        raw_output, check_rc        = self._run_check_file(check_fn)
+
+        # parse & record the output:
+        try:
+            setup_vars = SetupVars(raw_output)
+        except ValueError as e:
+            setup_vars   = SetupVars({})
+            table_status = 'inactive'
+            rc           = 201
+            print("Failed setup_check: %s" % reg_check['check'])
+            print("Error: JSON error: %s" % e)
+            printerr("Error on parsing ", reg_check['check_fn'], raw_output)
+        else:
+            rc = setup_vars.internal_rc
+            for key, val in setup_vars.tablecustom_vars.items():
+                self.add_table_var(key, val)
+            self.add_table_var('hapinsp_table_mode', setup_vars.table_mode)
+            table_status = setup_vars.table_status
+
+        count = None
+        self.results.add(self.instance, self.database, table, setup_check, count,
+                          rc, reg_check['check_status'],
+                          check_type='setup', setup_vars=setup_vars.tablecustom_vars)
+        self.drop_prior_table_vars()
+
+
+    def _run_check(self, table, check, reg_check):
+
+        if reg_check['check_status'] == 'inactive':
+            self.results.add(self.instance, self.database, table, check,
+                             count=None, rc=None, check_status='inactive')
+            return
+
+        # add envvars specific to this check from the registry
+        for key, val in reg_check.items():
+            if key.startswith('hapinsp_checkvar_'):
+                self.add_check_var(key, val)
+        self.add_check_var('hapinsp_check_mode', reg_check['check_mode'])
+
+        try:
+            check_fn           = self.repo.repo[reg_check['check_name']]['fqfn']
+        except KeyError:
+            print("Error: registry check not found: %s" % reg_check['check_name'])
+            sys.exit(1)
+        raw_output, check_rc        = self._run_check_file(check_fn)
+
+        try:
+            check_vars = CheckVars(raw_output)
+        except ValueError as e:
+            count        = None
+            int_rc       = None
+            rc           = 202
+            print("Failed check: %s" % check)
+            print("Error: JSON error: %s" % e)
+            printerr("Error on parsing ", check_fn, raw_output)
+        else:
+            count       = check_vars.violation_cnt
+            rc          = max(int(check_rc), int(check_vars.internal_rc))
+
+        self.results.add(self.instance, self.database, table, check,
+                         count, rc, reg_check['check_status'],
+                         setup_vars=dict(self.check_vars + self.table_vars))
+
+        # remove any check-specific envvars:
+        self.drop_check_vars()
+
+
+    def _run_check_file(self, check_filename):
+        assert isdir(self.repo.check_dir)
+        assert isfile(pjoin(self.repo.check_dir, check_filename))
+        check_fqfn = pjoin(self.repo.check_dir, check_filename)
+        process = subprocess.Popen([check_fqfn], stdout=subprocess.PIPE)
+        process.wait()
+        output = process.stdout.read()
+        rc     = process.returncode
+        return output.decode(), rc
+
+
+
+class CheckVars(object):
+
+    def __init__(self, raw_output):
+        self.reserved_keys    = ['rc', 'violations', 'mode']
+        self.raw_output       = raw_output
+        self.internal_rc      = None
+        self.violation_cnt    = None
+        self.mode             = None
+        self._parse_raw_output()
+
+    def _is_reserved_var(self, key):
+        if key in self.reserved_keys:
+            return True
+        else:
+            return False
+
+    def _parse_raw_output(self):
+        try:
+            output_vars = json.loads(self.raw_output)
+        except (TypeError, ValueError):
+            print("Error: invalid check results: %s" % self.raw_output)
+            if self.raw_output is None:
+                print("Error: check results raw_output is None")
+            raise
+
+        for key, val in output_vars.items():
+            if self._is_reserved_var(key):
+                if key == 'rc':
+                    self.internal_rc = val
+                elif key == 'mode':
+                    self.mode = val
+                elif key == 'violations':
+                    self.violation_cnt = val
+                    if not isnumeric(val):
+                        print("Invalid violations field")
+                        self.violations_cnt = -1
+            else:
+                raise ValueError("Invalid check result - key has bad name: %s" % key)
+
+
+
+class SetupVars(object):
+
+    def __init__(self, raw_output):
+        self.reserved_keys    = ['rc', 'table_status', 'mode']
+        self.raw_output       = raw_output
+        self.tablecustom_vars = {}
+        self.internal_rc      = -1
+        self.table_status     = 'active'
+        self.table_mode       = 'auto'
+        self._parse_raw_output()
+
+    def _is_reserved_var(self, key):
+        if key in self.reserved_keys:
+            return True
+        else:
+            return False
+
+    def _is_custom_var(self, key):
+        if key.startswith('hapinsp_tablecustom_'):
+            return True
+        else:
+            return False
+
+    def _parse_raw_output(self):
+        try:
+            output_vars = json.loads(self.raw_output)
+        except (TypeError, ValueError):
+            print("Error: invalid setup check results: %s" % self.raw_output)
+            if self.raw_output is None:
+                print("Error: setup check results raw_output is None")
+            raise
+
+        internal_rc = None
+        table_status = 'active'
+        for key, val in output_vars.items():
+            if self._is_reserved_var(key):
+                if key == 'rc':
+                    internal_rc = val
+                elif key == 'table_status' and val:
+                    table_status = val
+                elif key == 'table_mode' and val:
+                    table_mode = val
+            elif self._is_custom_var(key):
+                self.tablecustom_vars[key] = val
+            else:
+                raise ValueError("Invalid setup_check result - key has bad name: %s" % key)
+
+
+
+
+
+def istable(dbcon, tablename):
+    cur = dbcon.cursor()
+    cur.execute("select name from sqlite_master where type='table'")
+    results = cur.fetchall()
+    cur.close()
+    if not results:
+        return False
+    else:
+        if tablename in results[0]:
+            return True
+        else:
+            return False
 
 
 def abort(msg=""):
@@ -396,134 +779,8 @@ def isnumeric(val):
         return True
 
 
-
-
-class CheckRunner(object):
-
-    def __init__(self, registry, check_repo, check_results):
-        """ This is the general test runner class
-
-        :param check_repo: CheckRepository object
-        """
-        self.repo     = check_repo
-        self.registry = registry
-        self.results  = check_results
-        self.db_vars    = []
-        self.table_vars = []
-
-    def add_db_var(self, key, value):
-        self.db_vars.append((key, value))
-        os.environ[key] = value
-
-    def drop_db_vars(self):
-        for kv_tup in self.db_vars:
-            os.environ.pop(kv_tup[0])
-
-    def add_table_var(self, key, value):
-        self.table_vars.append((key, value))
-        os.environ[key] = value
-
-    def drop_table_vars(self):
-        for kv_tup in self.table_vars:
-            os.environ.pop(kv_tup[0])
-        self.table_vars = []
-
-    def run_checks_for_tables(self, table_override):
-        """ Runs checks on all tables, or just one if a non-None table value is provided.
-
-        :return: None
-
-        #todo: use table_override
-        """
-        for inst in self.registry.db_registry:
-            for db in self.registry.db_registry[inst]:
-                for table in self.registry.db_registry[inst][db]:
-
-                    self.add_table_var('hapinsp_table', table)
-
-                    # setup checks must happen first.  
-                    # We can run multiple setup checks, but they'll be in arbitrary order.
-                    for setup_check in [ x for x in self.registry.db_registry[inst][db][table]
-                               if self.registry.db_registry[inst][db][table][x]['check_type'] == 'setup' ]:
-                        reg_check = self.registry.db_registry[inst][db][table][setup_check]
-                        if reg_check['check_status'] == 'active':
-                            check_vars, rc = self._run_setup_check(reg_check)
-                            check_status = 'active'
-                        else:
-                            check_vars = {}
-                            rc         = None
-                            check_status = reg_check['check_status']
-                        for check_var in check_vars:
-                            self.add_table_var(check_var, check_vars[check_var])
-                        count = None
-                        self.results.add(inst, db, table, setup_check, count, rc, check_status)
-
-
-                    # checks run in arbitrary order - might want to sort them
-                    for check in [ x for x in self.registry.db_registry[inst][db][table]
-                                   if self.registry.db_registry[inst][db][table][x]['check_type']
-                                       not in ('setup', 'teardown') ]:
-                        reg_check = self.registry.db_registry[inst][db][table][check]
-                        if reg_check['check_status'] == 'active':
-                            count, rc = self._run_check(reg_check)
-                            check_status = 'active'
-                        else:
-                            count = None
-                            rc    = None
-                            check_status = reg_check['check_status']
-                        self.results.add(inst, db, table, check, count, rc, check_status)
-
-                    self.drop_table_vars()
-
-
-    def _run_setup_check(self, reg_check):
-        check_fn       = self.repo.repo[reg_check['check_name']]['fqfn']
-        raw_output, check_rc    = self._run_check_file(check_fn)
-        check_vars, internal_rc = self.parse_setup_check_results(raw_output)
-        return check_vars, max(int(check_rc), int(internal_rc))
-
-    def _run_check(self, reg_check):
-        check_fn           = self.repo.repo[reg_check['check_name']]['fqfn']
-        raw_output, check_rc        = self._run_check_file(check_fn)
-        violation_cnt, internal_rc  = self.parse_check_results(raw_output)
-        return violation_cnt, max(int(check_rc), int(internal_rc))
-
-    def parse_check_results(self, raw_output):
-        check = None
-        count = 0
-        check_rc = 0
-        output = json.loads(raw_output)
-        for key in output.keys():
-            if key == 'rc':
-                internal_rc = output['rc']
-            elif key == 'violations':
-                count = output['violations']
-                assert isnumeric(count)
-        return count, check_rc
-
-    def parse_setup_check_results(self, raw_output):
-        check = None
-        internal_rc = None
-        output = json.loads(raw_output)
-        for key in output.keys():
-            if key == 'rc':
-                internal_rc = output['rc']
-            elif not key.startswith('hapinsp_tablevar_'):
-                raise ValueError("Invalid setup_check result - key has bad name: %s" % key)
-        return output, internal_rc
-
-    def _run_check_file(self, check_filename):
-        assert isdir(self.repo.check_dir)
-        assert isfile(pjoin(self.repo.check_dir, check_filename))
-        check_fqfn = pjoin(self.repo.check_dir, check_filename)
-        process = subprocess.Popen([check_fqfn], stdout=subprocess.PIPE)
-        process.wait()
-        output = process.stdout.read()
-        rc     = process.returncode
-        #return output.decode().split('\n'), rc
-        return output.decode(), rc
-
-
+def printerr(*args):
+    sys.stderr.write(' '.join(map(str,args)) + '\n')
 
 
 

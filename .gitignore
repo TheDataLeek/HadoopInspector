@@ -3,4 +3,6 @@
 *.db
 *.log
 *.pyc
+.tox
 *egg-info*
+__pycache__

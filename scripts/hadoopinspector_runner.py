@@ -25,9 +25,9 @@ def main():
     registry.generate_db_registry(args.instance, args.database, args.table, args.check)
 
     check_repo     = core.CheckRepo(args.check_dir)
-    check_results  = core.CheckResults()
+    check_results  = core.CheckResults(db_fqfn=args.results_filename)
 
-    checker    = core.CheckRunner(registry, check_repo, check_results)
+    checker    = core.CheckRunner(registry, check_repo, check_results, args.instance, args.database)
     checker.add_db_var('hapinsp_instance', args.instance)
     checker.add_db_var('hapinsp_database', args.database)
     checker.run_checks_for_tables(args.table)
@@ -62,14 +62,19 @@ def get_args():
     parser.add_argument('--registry-filename',
                         required=True,
                         help='registry file contains check config')
+    parser.add_argument('--results-filename',
+                        required=True,
+                        help='results sqlite file')
     parser.add_argument('--check-dir',
+                        required=True,
                         help='which directory to look for the tests in')
     parser.add_argument('--log-dir',
+                        required=True,
                         help='specifies directory to log output to')
 
     args = parser.parse_args()
 
-    if not args.check_dir and not isdir(args.check_dir):
+    if not args.check_dir or not isdir(args.check_dir):
         print('Supplied test directory does not exist. Please create.')
         sys.exit(1)
     if not isdir(args.log_dir):

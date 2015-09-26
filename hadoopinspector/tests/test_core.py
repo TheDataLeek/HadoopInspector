@@ -44,8 +44,7 @@ class TestRegistry(object):
                check_status='active',
                check_type='rule',
                check_mode='full',
-               check_scope='row',
-               check_tags=[])
+               check_scope='row')
         reg.write(pjoin(self.temp_dir, 'registry.json'))
         reg.validate_file(pjoin(self.temp_dir, 'registry.json'))
         #with open(pjoin(self.temp_dir, 'registry.json')) as f:
@@ -61,8 +60,7 @@ class TestRegistry(object):
                check_status='active',
                check_type='rule',
                check_mode='full',
-               check_scope='row',
-               check_tags=[])
+               check_scope='row')
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
 
@@ -81,12 +79,10 @@ class TestRegistry(object):
                check_status='active',
                check_type='rule',
                check_mode='fullish',  # this is bad!
-               check_scope='row',
-               check_tags=[])
+               check_scope='row')
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
         with pytest.raises(SystemExit):
             reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
-
 
     def test_validating_bad_setup(self):
         reg1 = mod.Registry()
@@ -98,8 +94,7 @@ class TestRegistry(object):
                check_status='active',
                check_type='setup',
                check_mode='full',  # this is bad! should be None
-               check_scope='row',  # this is bad! should be None
-               check_tags=[])
+               check_scope='row')  # this is bad! should be None
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
         with pytest.raises(SystemExit):
             reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
@@ -114,24 +109,21 @@ class TestRegistry(object):
                check_status='active',
                check_type='setup',
                check_mode=None,
-               check_scope=None,
-               check_tags=[])
+               check_scope=None)
 
         reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
                check_mode='full',
-               check_scope='row',
-               check_tags=[])
+               check_scope='row')
 
         reg1.add_check('prod1', 'AssetEvent', 'asset', 'teardown',
                check_name='asset_teardown',
                check_status='active',
                check_type='setup',
                check_mode=None,
-               check_scope=None,
-               check_tags=[])
+               check_scope=None)
 
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
@@ -151,22 +143,19 @@ class TestRegistry(object):
                check_status='active',
                check_type='setup',
                check_mode=None,
-               check_scope=None,
-               check_tags=[])
+               check_scope=None)
         reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
                check_mode='full',
-               check_scope='row',
-               check_tags=[])
+               check_scope='row')
         reg1.add_check('prod1', 'AssetEvent', 'asset', 'teardown',
                check_name='asset_teardown',
                check_status='active',
                check_type='setup',
                check_mode=None,
-               check_scope=None,
-               check_tags=[])
+               check_scope=None)
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
         reg1.generate_db_registry('prod1', 'AssetEvent')
         assert 'check_name' in reg1.db_registry['prod1']['AssetEvent']['asset']['rule_pk1']
@@ -178,6 +167,21 @@ class TestRegistry(object):
 
         with pytest.raises(SystemExit):
             reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+
+    def test_validating_checkvars(self):
+        reg1 = mod.Registry()
+        reg1.add_instance('prod1')
+        reg1.add_db('prod1', 'AssetEvent')
+        reg1.add_table('prod1', 'AssetEvent', 'asset')
+        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+               check_name='rule_uniqueness',
+               check_status='active',
+               check_type='setup',
+               check_mode=None,  # this is bad! should be None
+               check_scope=None,  # this is bad! should be None
+               hapinsp_checkvar_foo='bar')
+        reg1.write(pjoin(self.temp_dir, 'registry.json'))
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
 
 
 
@@ -207,8 +211,9 @@ class TestCheckResults(object):
     def setup_method(self, method):
         self.inst  = 'inst1'
         self.db    = 'db2'
-        self.check_results = mod.CheckResults()
         self.temp_dir  = tempfile.mkdtemp(prefix="hadinsp_")
+        self.fqfn  = pjoin(self.temp_dir, 'results.sqlite')
+        self.check_results = mod.CheckResults(self.fqfn)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -260,7 +265,7 @@ class TestCheckResults(object):
 
     def test_creating_sqlite_table(self):
         self.add_2_checks_to_1_table('customer', violations=3)
-        self.check_results.write_to_sqlite(pjoin(self.temp_dir, 'results.sqlite'))
+        self.check_results.write_to_sqlite()
         assert isfile(pjoin(self.temp_dir, 'results.sqlite'))
         shutil.copy(pjoin(self.temp_dir, 'results.sqlite'), pjoin('/tmp', 'results.sqlite'))
 
@@ -269,20 +274,17 @@ class TestCheckResults(object):
         sql  = "SELECT * FROM check_results"
         cur.execute(sql)
         results = cur.fetchall()
-        pp(results)
         assert len(results)    == 2
-        assert len(results[0]) == 15
-        assert results[0][-1]  == 3
-        assert results[1][-1]  == 3
+        assert len(results[0]) == 17
+        assert results[0][-2]  == 3   #check_violations_cnt
+        assert results[1][-2]  == 3   #check_violations_cnt
 
         sql  = "SELECT max(run_start_timestamp), current_timestamp, \
                        max(run_start_timestamp) - current_timestamp  as time_diff\
                 FROM check_results"
         cur.execute(sql)
         results = cur.fetchall()
-        pp(results)
         assert results[0][2] in (0, 1), "should run in 0 seconds normally, 1 second worst-case"
-
         conn.close()
 
 
