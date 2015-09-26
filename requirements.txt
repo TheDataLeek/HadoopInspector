@@ -1,3 +1,4 @@
+envoy==0.0.3
 Flask==0.10.1
 Jinja2==2.8
 MarkupSafe==0.23
@@ -9,3 +10,4 @@ mpld3==0.2
 python-dateutil==2.4.2
 pytest==2.7.2
 pytz==2015.4
+validictory==1.0.0

@@ -3,5 +3,8 @@
 *.db
 *.log
 *.pyc
+.tox
 *egg-info*
 *.sqlite
+obsolete
+__pycache__
