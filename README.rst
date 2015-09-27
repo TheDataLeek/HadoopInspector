@@ -1,9 +1,6 @@
 Hadoop\_Inspector
 =================
 
-For a more detailed analysis, please reference `the pdf
-report <https://github.com/willzfarmer/HadoopInspector/blob/master/proposal/HadoopInspector.pdf>`__
-
 To review our complete set of documentation please see our `wiki
 page <https://github.com/willzfarmer/HadoopInspector/wiki>`__
 
@@ -51,7 +48,9 @@ includes: - hadoopinspector-demogen.py - which can generate 50,000+
 check results against a hypothetical user hadoop environment. This is
 used to excercize the UI. - hadoopinspector-runner.py - a test-runner
 that writes results to a SQLite database. - hapinsp\_httpserver.py -
-serves the UI. More info is on the
+serves the UI.
+
+More info is on the
 `wiki <https://github.com/willzfarmer/HadoopInspector/wiki>`__
 
 Installation
