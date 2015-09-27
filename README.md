@@ -35,9 +35,10 @@ accidental changes to production, data migration errors, and ETL/Ingest  defects
 ##Current Status
 
 Our current focus has been to complete a minimum viable product that includes:
-    - hadoopinspector-demogen.py - which can generate 50,000+ check results against a hypothetical user hadoop environment.  This is used to excercize the UI.
-    - hadoopinspector-runner.py - a test-runner that writes results to a SQLite database.
-    - hapinsp_httpserver.py - serves the UI.
+
+   * hadoopinspector-demogen.py - which can generate 50,000+ check results against a hypothetical user hadoop environment.  This is used to excercize the UI.
+   * hadoopinspector-runner.py - a test-runner that writes results to a SQLite database.
+   * hapinsp_httpserver.py - serves the UI.
 
 More info is on the [wiki](https://github.com/willzfarmer/HadoopInspector/wiki)
 
