@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 """ Generate demo test-results data.
 
     This program is used to create fake results from daily runs against a

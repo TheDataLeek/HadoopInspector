@@ -1,4 +1,4 @@
-#!/usr/bin/env python34
+#!/usr/bin/env python2
 from __future__ import division
 import sys, os, shutil, stat, time
 import tempfile
@@ -143,7 +143,7 @@ def report_rec_parser(rec):
         raise EmptyRecError
 
     fields = rec.split('|')
-    if len(fields) != 6:
+    if len(fields) != 5:
         raise ValueError("Not a report rec: %s" % rec)
     else:
         table = fields[0]

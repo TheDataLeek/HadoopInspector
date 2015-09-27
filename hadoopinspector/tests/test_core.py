@@ -1,4 +1,4 @@
-#!/usr/bin/env python34
+#!/usr/bin/env python2
 from __future__ import division
 import sys, os, shutil, stat
 import time, datetime

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 import sys
 import os
@@ -33,7 +33,7 @@ def main():
     checker.run_checks_for_tables(args.table)
 
     if args.report:
-        for rec in checker.results.get_formatted_results():
+        for rec in checker.results.get_formatted_results(args.detail_report):
             print(rec)
 
     sys.exit(checker.results.get_max_rc())
@@ -58,7 +58,11 @@ def get_args():
     parser.add_argument('-r', '--report',
                         action='store_true',
                         default=False,
-                        help='indicates that a report should be generated')
+                        help='indicates that a basic report should be generated')
+    parser.add_argument('--detail-report',
+                        action='store_true',
+                        default=False,
+                        help='indicates that a detailed report should be generated')
     parser.add_argument('--registry-filename',
                         required=True,
                         help='registry file contains check config')
@@ -83,6 +87,8 @@ def get_args():
     if not isfile(args.registry_filename):
         print('Supplied registry-filename does not exist.  Please correct.')
         sys.exit(1)
+    if args.detail_report:
+        args.report = True
 
     return args
 

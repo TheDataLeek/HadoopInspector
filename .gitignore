@@ -4,7 +4,10 @@
 *.log
 *.pyc
 .tox
-*egg-info*
+hadoop_inspector.egg-info/*
 *.sqlite
 obsolete
+registry.json
+dist/*
+.cache/*
 __pycache__

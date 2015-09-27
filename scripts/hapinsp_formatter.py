@@ -7,7 +7,7 @@ import argparse
 
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import hadoopinspector.core as core
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 def main():
     args = get_args()
