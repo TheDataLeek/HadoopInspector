@@ -283,7 +283,7 @@ class CheckResults(object):
             self.results[instance][database][table][check] = {}
 
         self.results[instance][database][table][check]['violation_cnt']        = violations
-        self.results[instance][database][table][check]['rc']                   = rc
+        self.results[instance][database][table][check]['rc']                   = int(rc)
         self.results[instance][database][table][check]['check_status']         = check_status
         self.results[instance][database][table][check]['check_unit']           = check_unit
         self.results[instance][database][table][check]['check_type']           = check_type
