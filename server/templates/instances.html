@@ -14,17 +14,17 @@
   </tr>
 </thead>
 <tbody>
-    {% for name in names %}
+    {% for cname in clean_names %}
     <tr>
         <td>{{ loop.index }}</td>
         <td>
-            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ name }}';">
-                {{ name }}
+            <button type="button" class="btn btn-xs- btn-default" onclick="location.href='/inspect/{{ names[loop.index0] }}';">
+                {{ names[loop.index0] }}
             </button>
         </td>
         <td>
             <h4>
-            {% if metadata[name]['passing'] == 0 %}
+            {% if metadata[cname]['passing'] == 0 %}
                 <span class="label label-success">
                     Passing
                 </span>
@@ -35,7 +35,7 @@
             {% endif %}
             </h4>
         </td>
-        <td>{{ metadata[name]['passing'] }}</td>
+        <td>{{ metadata[cname]['passing'] }}</td>
     </tr>
     {% endfor %}
 </tbody>
@@ -44,7 +44,7 @@
 {% block js %}
 <script>
 function convertDataWeek() {
-{% for name in names %}
+{% for name in clean_names %}
     var {{ name }} = [
     {% for row in history[name]['week'] %}
         {
@@ -56,7 +56,7 @@ function convertDataWeek() {
 {% endfor %}
 
     return [
-        {% for name in names %}
+        {% for name in clean_names %}
         {
             values: {{ name }},
             key: '{{ name }}',
@@ -66,7 +66,7 @@ function convertDataWeek() {
     ];
 };
 function convertDataMonth() {
-{% for name in names %}
+{% for name in clean_names %}
     var {{ name }} = [
     {% for row in history[name]['month'] %}
         {
@@ -78,17 +78,17 @@ function convertDataMonth() {
 {% endfor %}
 
     return [
-        {% for name in names %}
+        {% for name in clean_names %}
         {
             values: {{ name }},
             key: '{{ name }}',
             color: '{{ colors[loop.index % 9] }}'
-        } {% if loop.index != names|length %},{% endif %}
+        } {% if loop.index != clean_names|length %},{% endif %}
         {% endfor %}
     ];
 };
 function convertDataYear() {
-{% for name in names %}
+{% for name in clean_names %}
     var {{ name }} = [
     {% for row in history[name]['year'] %}
         {
@@ -100,12 +100,12 @@ function convertDataYear() {
 {% endfor %}
 
     return [
-        {% for name in names %}
+        {% for name in clean_names %}
         {
             values: {{ name }},
             key: '{{ name }}',
             color: '{{ colors[loop.index % 9] }}'
-        } {% if loop.index != names|length %},{% endif %}
+        } {% if loop.index != clean_names|length %},{% endif %}
         {% endfor %}
     ];
 };
