@@ -1,0 +1,3 @@
+{
+  "server/test/test_httpserver.py::TestServer::()::test_database_file": true
+}
