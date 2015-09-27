@@ -268,7 +268,7 @@ class CheckResults(object):
         assert check_type   in ('rule', 'profile', 'setup', 'teardown')
         assert check_policy_type   in ('quality', 'consistency', 'data-management'), "invalid policy_type: %s" % check_policy_type
         assert check_unit   in ('rows', 'tables')
-        assert check_mode   in ('full', 'incremental')
+        assert check_mode   in ('full', 'incremental', 'auto', None), "invalid check_mode: %s" % check_mode
         assert check_status in (None, 'active', 'inactive')
         assert isnumeric(check_scope)
         assert isnumeric(check_severity_score)
@@ -288,7 +288,7 @@ class CheckResults(object):
         self.results[instance][database][table][check]['check_unit']           = check_unit
         self.results[instance][database][table][check]['check_type']           = check_type
         self.results[instance][database][table][check]['check_policy_type']    = check_type
-        self.results[instance][database][table][check]['check_mode']           = check_mode
+        self.results[instance][database][table][check]['check_mode']           = '' if check_mode is None else check_mode
         self.results[instance][database][table][check]['check_scope']          = check_scope
         self.results[instance][database][table][check]['check_severity_score'] = check_severity_score
         self.results[instance][database][table][check]['run_start_timestamp']  = run_start_timestamp
@@ -312,7 +312,6 @@ class CheckResults(object):
             else:
                 return val2
 
-        pp(self.results)
         formatted_results = []
         for inst in self.results:
             for db in self.results[inst]:
@@ -591,9 +590,9 @@ class CheckRunner(object):
             setup_vars   = SetupVars({})
             table_status = 'inactive'
             rc           = 201
-            print("Failed setup_check: %s" % reg_check['check'])
+            print("Failed setup_check: %s" % setup_check)
             print("Error: JSON error: %s" % e)
-            printerr("Error on parsing ", reg_check['check_fn'], raw_output)
+            printerr("Error on parsing ", setup_check, raw_output)
         else:
             rc = setup_vars.internal_rc
             for key, val in setup_vars.tablecustom_vars.items():
@@ -604,6 +603,7 @@ class CheckRunner(object):
         count = None
         self.results.add(self.instance, self.database, table, setup_check, count,
                           rc, reg_check['check_status'],
+                          check_mode=setup_vars.table_mode,
                           check_type='setup', setup_vars=setup_vars.tablecustom_vars)
         self.drop_prior_table_vars()
 
@@ -629,7 +629,8 @@ class CheckRunner(object):
         raw_output, check_rc        = self._run_check_file(check_fn)
 
         try:
-            check_vars = CheckVars(raw_output)
+            check_vars   = CheckVars(raw_output)
+            actual_mode  = check_vars.mode
         except ValueError as e:
             count        = None
             int_rc       = None
@@ -637,12 +638,14 @@ class CheckRunner(object):
             print("Failed check: %s" % check)
             print("Error: JSON error: %s" % e)
             printerr("Error on parsing ", check_fn, raw_output)
+            actual_mode  = None
         else:
             count       = check_vars.violation_cnt
             rc          = max(int(check_rc), int(check_vars.internal_rc))
 
         self.results.add(self.instance, self.database, table, check,
                          count, rc, reg_check['check_status'],
+                         check_mode=actual_mode,
                          setup_vars=dict(self.check_vars + self.table_vars))
 
         # remove any check-specific envvars:
@@ -668,8 +671,18 @@ class CheckVars(object):
         self.raw_output       = raw_output
         self.internal_rc      = None
         self.violation_cnt    = None
-        self.mode             = None
+        self._mode            = None
         self._parse_raw_output()
+
+    @property
+    def mode(self):
+        if self._mode is None:
+            return 'full'
+        else:
+            return self._mode
+    @mode.setter
+    def mode(self, value):
+        self._mode = value
 
     def _is_reserved_var(self, key):
         if key in self.reserved_keys:
@@ -710,8 +723,19 @@ class SetupVars(object):
         self.tablecustom_vars = {}
         self.internal_rc      = -1
         self.table_status     = 'active'
-        self.table_mode       = 'auto'
+        self._table_mode      = None
         self._parse_raw_output()
+
+    @property
+    def table_mode(self):
+        if self._table_mode is None:
+            return 'auto'
+        else:
+            return self._table_mode
+    @table_mode.setter
+    def table_mode(self, value):
+        self._table_mode = value
+
 
     def _is_reserved_var(self, key):
         if key in self.reserved_keys:
@@ -739,11 +763,11 @@ class SetupVars(object):
         for key, val in output_vars.items():
             if self._is_reserved_var(key):
                 if key == 'rc':
-                    internal_rc = val
+                    self.internal_rc = val
                 elif key == 'table_status' and val:
-                    table_status = val
-                elif key == 'table_mode' and val:
-                    table_mode = val
+                    self.table_status = val
+                elif key == 'mode' and val:
+                    self.table_mode = val
             elif self._is_custom_var(key):
                 self.tablecustom_vars[key] = val
             else:
