@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 import sys, os
 import json
@@ -306,6 +306,7 @@ def table(instance, database, table):
             'FROM check_results '
             'WHERE instance_name=? '
             'AND database_name=? '
+            'AND check_name NOT LIKE "setup_%" '
             'AND table_name=?'),
         (instance, database, table),
         ('SELECT DISTINCT table_name '
@@ -313,6 +314,7 @@ def table(instance, database, table):
             'WHERE instance_name=? '
             'AND database_name=? '
             'AND table_name=? '
+            'AND check_name NOT LIKE "setup_%" '
             'AND check_name LIKE ?'),
         (instance, database, table, '%' + search_form_query + '%'))
 
@@ -320,7 +322,7 @@ def table(instance, database, table):
         (('SELECT strftime("%Y-%m", run_start_timestamp) as yr_mon, SUM(check_violation_cnt) as tot '
             'FROM check_results '
             'WHERE instance_name="{}" '
-            'AND check_type NOT LIKE "setup_%" '
+            'AND check_name NOT LIKE "setup_%" '
             'AND database_name="{}" '
             'AND table_name="{}" '.format(instance, database, table)) +
             ('AND check_name="{}" '
@@ -329,7 +331,7 @@ def table(instance, database, table):
         (('SELECT strftime("%Y-%m-%d", run_start_timestamp) as yr_mon_day, SUM(check_violation_cnt) as tot '
             'FROM check_results '
             'WHERE instance_name="{}" '
-            'AND check_type NOT LIKE "setup_%" '
+            'AND check_name NOT LIKE "setup_%" '
             'AND database_name="{}" '
             'AND table_name="{}" '.format(instance, database, table)) +
             ('AND check_name="{}" '
@@ -338,7 +340,7 @@ def table(instance, database, table):
         (('SELECT run_start_timestamp, check_violation_cnt '
             'FROM check_results '
             'WHERE instance_name="{}" '
-            'AND check_type NOT LIKE "setup_%" '
+            'AND check_name NOT LIKE "setup_%" '
             'AND database_name="{}" '
             'AND table_name="{}" '.format(instance, database, table)) +
             ('AND check_name="{}" '
