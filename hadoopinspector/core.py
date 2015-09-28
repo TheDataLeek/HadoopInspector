@@ -1,4 +1,4 @@
-#!/usr/bin/env python34
+#!/usr/bin/env python2
 
 import os, sys, time, datetime, subprocess
 import json
@@ -283,7 +283,7 @@ class CheckResults(object):
             self.results[instance][database][table][check] = {}
 
         self.results[instance][database][table][check]['violation_cnt']        = violations
-        self.results[instance][database][table][check]['rc']                   = rc
+        self.results[instance][database][table][check]['rc']                   = int(rc)
         self.results[instance][database][table][check]['check_status']         = check_status
         self.results[instance][database][table][check]['check_unit']           = check_unit
         self.results[instance][database][table][check]['check_type']           = check_type
@@ -305,7 +305,7 @@ class CheckResults(object):
                             max_rc = self.results[instance][database][table][check]['rc']
         return max_rc
 
-    def get_formatted_results(self):
+    def get_formatted_results(self, detail):
         def coalesce(val1, val2):
             if val1 is not None:
                 return val1
@@ -318,20 +318,32 @@ class CheckResults(object):
                 for tab in sorted(self.results[inst][db]):
                     for setup_check in sorted({ x for x in self.results[inst][db][tab]
                                        if self.results[inst][db][tab][x]['check_type'] == 'setup' }):
-                        rec = '%s|%s|%s|%s|%s|%s' % (tab, setup_check,
-                                    self.results[inst][db][tab][setup_check]['check_mode'],
-                                    self.results[inst][db][tab][setup_check]['rc'],
-                                    coalesce(self.results[inst][db][tab][setup_check]['violation_cnt'], ''),
-                                    coalesce(self.results[inst][db][tab][setup_check]['setup_vars'], '') )
+                        if detail:
+                            rec = '%s|%s|%s|%s|%s|%s' % (tab, setup_check,
+                                        self.results[inst][db][tab][setup_check]['check_mode'],
+                                        self.results[inst][db][tab][setup_check]['rc'],
+                                        coalesce(self.results[inst][db][tab][setup_check]['violation_cnt'], ''),
+                                        coalesce(self.results[inst][db][tab][setup_check]['setup_vars'], '') )
+                        else:
+                            rec = '%s|%s|%s|%s|%s' % (tab, setup_check,
+                                        self.results[inst][db][tab][setup_check]['check_mode'],
+                                        self.results[inst][db][tab][setup_check]['rc'],
+                                        coalesce(self.results[inst][db][tab][setup_check]['violation_cnt'], '') )
                         formatted_results.append(rec)
 
                     for check in sorted({ x for x in self.results[inst][db][tab]
                                  if self.results[inst][db][tab][x]['check_type'] not in ('setup', 'teardown') }):
-                        rec = '%s|%s|%s|%s|%s|%s' % (tab, check,
-                                    self.results[inst][db][tab][check]['check_mode'],
-                                    self.results[inst][db][tab][check]['rc'],
-                                    coalesce(self.results[inst][db][tab][check]['violation_cnt'], ''),
-                                    coalesce(self.results[inst][db][tab][check]['setup_vars'], '') )
+                        if detail:
+                            rec = '%s|%s|%s|%s|%s|%s' % (tab, check,
+                                        self.results[inst][db][tab][check]['check_mode'],
+                                        self.results[inst][db][tab][check]['rc'],
+                                        coalesce(self.results[inst][db][tab][check]['violation_cnt'], ''),
+                                        coalesce(self.results[inst][db][tab][check]['setup_vars'], '') )
+                        else:
+                            rec = '%s|%s|%s|%s|%s' % (tab, check,
+                                        self.results[inst][db][tab][check]['check_mode'],
+                                        self.results[inst][db][tab][check]['rc'],
+                                        coalesce(self.results[inst][db][tab][check]['violation_cnt'], '') )
                         formatted_results.append(rec)
         return formatted_results
 
@@ -443,7 +455,7 @@ def create_sqlite_db(db_fqfn):
     c.execute(check_results_cmd)
     conn.commit()
     conn.close()
-    print("results.sqlite database successfully created")
+    #print("results.sqlite database successfully created")
 
 
 
@@ -468,7 +480,7 @@ class CheckRunner(object):
             print("Error: invalid table_var of: %s" % key)
         else:
             self.db_vars.append((key, value))
-            os.environ[key] = value
+            os.environ[key] = str(value)
 
     def drop_db_vars(self):
         uniq_keys = { x[0] for x in self.db_vars }
@@ -481,7 +493,7 @@ class CheckRunner(object):
             print("Error: invalid table_var of: %s" % key)
         else:
             self.table_vars.append((key, value))
-            os.environ[key] = value
+            os.environ[key] = str(value)
 
     def drop_table_vars(self):
         uniq_keys = { x[0] for x in self.table_vars }
@@ -495,7 +507,7 @@ class CheckRunner(object):
         else:
             adj_key = key + '_prior'
             self.prior_table_vars.append((adj_key, value))
-            os.environ[adj_key] = value
+            os.environ[adj_key] = str(value)
 
     def drop_prior_table_vars(self):
         uniq_keys = { x[0] for x in self.prior_table_vars }
@@ -510,7 +522,7 @@ class CheckRunner(object):
             print("Invalid checkcustom var: %s" % key)
             return
         self.check_vars.append((key, value))
-        os.environ[key] = value
+        os.environ[key] = (value)
 
     def drop_check_vars(self):
         uniq_keys = { x[0] for x in self.check_vars }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python34
+#!/usr/bin/env python2
 from __future__ import division
 import sys, os, shutil, stat
 import time, datetime
@@ -238,9 +238,9 @@ class TestCheckResults(object):
     def test_add_str(self):
         self.add_2_checks_to_1_table('customer', '3', '0')
         table_results = self.check_results.results[self.inst][self.db]['customer']
-        assert table_results['check_fk1']['rc'] == '0'
+        assert table_results['check_fk1']['rc'] == 0
         assert table_results['check_fk1']['violation_cnt'] == '3'
-        assert table_results['check_fk2']['rc'] == '0'
+        assert table_results['check_fk2']['rc'] == 0
         assert table_results['check_fk2']['violation_cnt'] == '3'
 
     def test_demo_add(self):
@@ -248,7 +248,7 @@ class TestCheckResults(object):
         stop_dt  = datetime.datetime(2015, 1, 2, 15, 23, 59)
         self.add_1_demo_check_to_1_table('customer', '3', '0', start_dt, stop_dt)
         table_results = self.check_results.results[self.inst][self.db]['customer']
-        assert table_results['check_fk1']['rc'] == '0'
+        assert table_results['check_fk1']['rc'] == 0
         assert table_results['check_fk1']['violation_cnt'] == '3'
         assert table_results['check_fk1']['run_start_timestamp'] == start_dt
         assert table_results['check_fk1']['run_stop_timestamp']  == stop_dt

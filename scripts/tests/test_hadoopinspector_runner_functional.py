@@ -1,4 +1,4 @@
-#!/usr/bin/env python34
+#!/usr/bin/env python2
 from __future__ import division
 import sys, os, shutil, stat, time
 import tempfile
@@ -71,8 +71,8 @@ class TestWithMockedCheckFiles(object):
                 continue
             except ValueError:
                 pass
-                #print('could not parse output rec:')
-                #print(line)
+                #print('report_rec_parser - could not parse output rec:')
+                print(line)
                 #raise
         return report, run_rc
 
