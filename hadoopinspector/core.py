@@ -397,29 +397,28 @@ class CheckResults(object):
 
 
     def get_prior_setup_vars(self, inst, db, table, setup_check):
-        sql  = ("WITH maxtime AS ( "
-                "    SELECT MAX(run_start_timestamp) AS run_start_timestamp"
-                "    FROM check_results "
-                "    WHERE instance_name = '{inst}' "
-                "      AND database_name = '{db}' "
-                "      AND table_name    = '{tb}' "
-                "      AND check_name    = '{cn}' "
-                "      AND check_rc      = 0 "
-                ")"
-                "SELECT env_vars "
+        sql  = ("SELECT env_vars "
                 "FROM check_results  cr "
-                "    INNER JOIN maxtime mt "
-                "       ON cr.run_start_timestamp = mt.run_start_timestamp "
+                "    INNER JOIN (SELECT MAX(run_start_timestamp) AS run_start_timestamp "
+                "                 FROM check_results "
+                "                 WHERE instance_name = '{inst}' "
+                "                  AND database_name  = '{db}' "
+                "                  AND table_name     = '{tb}' "
+                "                  AND check_name     = '{cn}' ) as max_time "
+                "       ON cr.run_start_timestamp = max_time.run_start_timestamp "
                 "WHERE instance_name = '{inst}' "
                 "  AND database_name = '{db}' "
                 "  AND table_name    = '{tb}' "
-                "  AND check_name    = '{cn}' ")
+                "  AND check_name    = '{cn}' "
+                " LIMIT 1"
+                ";" )
         conn = sqlite3.connect(self.db_fqfn)
         c    = conn.cursor()
         try:
             c.execute(sql.format(inst=inst, db=db, tb=table, cn=setup_check))
         except sqlite3.OperationalError as e:
-            pass
+            print("get_prior_setup_vars failed!")
+            print(e)
         results = c.fetchall()
         conn.commit()
         conn.close()
@@ -578,6 +577,7 @@ class CheckRunner(object):
         if prior_setup_vars_string:
             prior_setup_vars = SetupVars(prior_setup_vars_string)
             for key, val in prior_setup_vars.tablecustom_vars.items():
+  
                 self.add_prior_table_var(key, val)
             self.add_prior_table_var('hapinsp_tablecustom_internal_rc_prior', prior_setup_vars.internal_rc)
 
