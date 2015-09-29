@@ -48,6 +48,11 @@
         #- run_check_end_timestamp   TIMESTAMP (YYYY-MM-DD HH:MM:SS)
         #- run_check_anomaly_score   INTEGER   (always 0)
 
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+   http://opensource.org/licenses/BSD-3-Clause
+Copyright 2015 Will Farmer and Ken Farmer
 """
 from __future__ import division
 import os, sys

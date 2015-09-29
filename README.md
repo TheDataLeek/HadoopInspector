@@ -50,3 +50,11 @@ More info is on the [wiki](https://github.com/willzfarmer/HadoopInspector/wiki)
 * requires python 2.7
 
 
+#Licensing
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+   http://opensource.org/licenses/BSD-3-Clause
+Copyright 2015 Will Farmer and Ken Farmer
+
+
