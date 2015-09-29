@@ -1,3 +1,10 @@
+/*
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+    http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2015 Will Farmer and Ken Farmer
+*/
+
 function addGraphTo(location, datafunc) {
     var chart = nv.models.lineChart()
                 .margin({left: 100, right:50})

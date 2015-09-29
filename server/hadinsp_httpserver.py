@@ -1,5 +1,12 @@
 #!/usr/bin/env python2
 
+"""
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+    http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2015 Will Farmer and Ken Farmer
+"""
+
 import sys, os
 import json
 import re
