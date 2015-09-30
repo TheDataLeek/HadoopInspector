@@ -15,130 +15,115 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\documentclass[10pt]{article} % The default font size is 10pt; 11pt and 12pt are alternatives
+\documentclass[12pt]{article} % The default font size is 10pt; 11pt and 12pt are alternatives
 
 \input{structure.tex} % Include the document which specifies all packages and structural customizations for this template
 
 \begin{document}
 
 %----------------------------------------------------------------------------------------
-%	HEADER IMAGE
+%	HEADER
 %----------------------------------------------------------------------------------------
 
-\begin{figure}[H]
-\centering\includegraphics[width=0.3\linewidth]{logo.png}
-\end{figure}
+\begin{center}
+%{\Huge \textbf{Hadoop Inspector}}
+{\fontsize{50}{60}\selectfont Hadoop Inspector}
+
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
+\end{center}
+
+\hyphenpenalty 1000
+\exhyphenpenalty 1000
 
 %----------------------------------------------------------------------------------------
 %	SIDEBAR - FIRST PAGE
 %----------------------------------------------------------------------------------------
 
-\begin{minipage}[t]{.30\linewidth} % Mini page taking up 30% of the actual page
-\begin{mdframed}[style=sidebar,frametitle={}] % Sidebar box
+\vspace{1cm}
 
-%-----------------------------------------------------------
+\begin{minipage}[c]{.66\linewidth}
 
-\hypertarget{contents}{\textbf{{\large In This Issue\ldots}}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
+\heading{The Problem}{0pt}
+
 \begin{itemize}
-\item \hyperlink{firstnews}{The first news headline!} % These link to their appropriate sections in the newsletter
-\item \hyperlink{secondnews}{The second news headline}
-\item \hyperlink{thirdnews}{The third news headline\ldots}
-\item \hyperlink{descriptivebox}{A descriptive box!}
-\item \hyperlink{quotation}{Customer quotation}
+\item Data Science has a low-tolerance for data quality problems
+\item Data Science has a high frequency of data quality problems
+\item Hadoop administration continues to be difficult, expensive, and error prone
 \end{itemize}
 
-\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
+\heading{The Consequences}{0pt}
 
-%-----------------------------------------------------------
+\begin{itemize}
+    \item Loss of credibility
+    \item Loss of algorithmic accuracy
+    \item Loss of data scientist and analyst productivity
+    \item Irreproducible findings
+    \item Project failure or cancellation
+\end{itemize}
 
-\textbf{Quisque ut nisl ut enim!}
+\heading{The Solution: Hadoop Inspector}{0pt}
 
-Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae nulla.  Quisque ornare mattis odio eget bibendum. Integer ac nisl in est consectetur:
+\begin{itemize}
+    \item Low-barrier-entry to writing tests
+    \item Tests can be written in shell scripts, python, ruby, java
+    \item Tests can include SQL, MapReduce, Spark
+    \item Tests can integrate with ETL logs, external systems
+\end{itemize}
 
-\begin{enumerate}
-\item Mauris hendrerit nibh vitae \textsl{Mauris Porttitor Malesuada} faucibus.
-\item Nam dignissim \textsl{Sollicitudin Nunc} id. 
-\item Scelerisque urna imperdiet non \textsl{varius} ipsum primis \textsl{posuere}.
-\item Bibendum \textsl{orci} consectetur.
-\end{enumerate}
+\vspace{1cm}
 
-%-----------------------------------------------------------
-
-\textbf{Quis Dapibus Ipsum!}
-
-Phasellus malesuada nisl at sapien vehicula at porttitor mi egestas ornare quis lobortis eros volutpat nunc viverra viverra ligula, sit amet posuere lectus aliquam quis. Vel at dolor \href{http://www.example.com}{elementum sapien}, mollis sit amet.
-
-\textbf{Ornare Justo Ultricies}
-
-Aliquam tristique sapien ut neque condimentum fermentum. In ultricies dictum massa, sit amet volutpat felis rutrum sit amet. Nulla vulputate leo et purus \href{http://www.example.com}{Ornare Justo Ultricies}. Consectetur iaculis eros \href{http://www.example.com}{Ornare Justo} non et.
-
-%-----------------------------------------------------------
-
-\captionof*{table}{Table Caption}
-\begin{tabular}{llr}
-\toprule
-\multicolumn{2}{c}{Name} \\
-\cmidrule(r){1-2}
-First & Last & Grade \\
-\midrule
-John & Doe & $7.5$ \\
-Richard & Miles & $2$ \\
-\bottomrule
-\end{tabular}
-
-%-----------------------------------------------------------
-
-\end{mdframed}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{screen1.png}
+\end{figure}
 \end{minipage}\hfill % End the sidebar mini page 
 %
 %----------------------------------------------------------------------------------------
 %	MAIN BODY - FIRST PAGE
 %----------------------------------------------------------------------------------------
 %
-\begin{minipage}[t]{.66\linewidth} % Mini page taking up 66% of the actual page
+\begin{minipage}[c]{.32\linewidth}
+\begin{mdframed}[style=sidebar,frametitle={}] % Sidebar box
 
-\hypertarget{firstnews}{\heading{The First News Headline}{6pt}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
+{\large
+\begin{centering}
+    \textbf{Sample Check Types}
+\end{centering}
+}
 
-In vel accumsan nisi. Sed eget justo a erat volutpat varius ut non quam. Nulla placerat eros id nibh laoreet pulvinar. Quisque semper.
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
 
-\begin{center}
-\parbox[t]{.70\linewidth}{\textsl{Pellentesque gravida volutpat convallis. Ut sollicitudin egestas dictum. Pellentesque in nisi faucibus ullamcorper eu ac magna!}}
-\end{center}
+\NewList
+\ListProperties(Style1=\bfseries,Style1*=$\bullet$ ,Hide1=1)
+\ListProperties(Style2*=-- ,Hide2=2)
+\ListProperties(Margin1=0cm,Margin2=0.1cm)
+\ListProperties(Space=-0.1cm,Space*=-0.1cm)
+\begin{easylist}
+    @ Data Quality Checks:
+    @@ check uniqueness
+    @@ check foreign key reference
+    @@ check case
+    @@ check min and max value
+    @@ check min and max length
+    @@ check accessibility
+    @@ check type
+    @@ check required fields
+    @@ check unknown value
+    @@ check enumerated value
+    @@ check {\ttfamily start\_timestamp} < {\ttfamily stop\_timestamp}
+    @ Data Consistency Checks
+    @@ check base vs summary table
+    @@ check peer tables
+    @@ check target vs source
+    @ Data Management Checks:
+    @@ check statistics age
+    @@ check retention age
+    @@ check access
+    @@ check blocksize
+    @@ check file formats
+\end{easylist}
 
-Duis eu \textsl{Felis eget}, purus bibendum elementum. Donec sed nunc sit amet ante congue aliquet tempus vitae ligula. Vestibulum dapibus malesuada purus, nec tincidunt lacus mollis ut. Nunc luctus accumsan tortor quis molestie. Donec erat nisl, auctor nec semper imperdiet, adipiscing ut ante. Vestibulum id metus libero, a vestibulum diam. 
-
-\begin{wrapfigure}[7]{l}[0pt]{0pt} % In-line figure with text wrapping around it
-\includegraphics[width=0.3\textwidth]{placeholder.jpg}
-\end{wrapfigure}
-
-\textsl{Vivamus condimentum interdum} metus at varius vehicula, elit nunc sollicitudin enim, at scelerisque lorem urna vitae metus. Donec hendrerit consectetur tincidunt. Duis a magna justo. Nunc non mauris mi, eget commodo leo. Maecenas gravida lacus nunc, at viverra quam. Duis a turpis at lectus ultricies condimentum ut ut enim. Duis a magna justo. Nunc non mauris mi, eget commodo leo. Maecenas gravida lacus nunc, at viverra quam. Duis a turpis at lectus ultricies condimentum ut ut enim.
-
-Sed diam nisi, tristique ut dapibus a, volutpat vitae nisi. Vivamus aliquam quam sed mi rhoncus commodo. Suspendisse massa mauris, ullamcorper ut hendrerit vitae, ultrices eget ligula.
-
-Donec hendrerit consectetur tincidunt, nec gravida \href{http://www.example.com}{\textit{Duis a Magna Justo}} auctor nec, semper \href{http://www.example.com/}{Nec Gravida Rutrum} nulla nulla \href{http://www.example.com}{Elementum}, neque eu vulputate.
-
-%-----------------------------------------------------------
-
-\hypertarget{secondnews}{\heading{The Second News Headline}{6pt}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
-
-Aenean turpis libero, accumsan vitae sagittis eu, ornare eu lacus. Sed id odio eget velit congue porttitor. Cras quis neque non magna fringilla dapibus:
-
-\begin{itemize}
-\item morbi vulputate dapibus sapien
-\item cras vel nulla libero, in varius augue
-\item pellentesque quis nisl id 
-\end{itemize}
-
-Donec nulla elit, vulputate vel pharetra et, tempor ut nisl vivamus. Sapien lectus porttitor urna, sit amet lobortis odio eros at metus.
-
-Integer orci lorem, aliquam in dapibus at, tincidunt vitae felis nullam nec sem tellus, nec condimentum diam.
-
-Donec massa dolor, fermentum eget sagittis ut, sagittis placerat lacus. Donec id purus nunc fusce dignissim gravida condimentum. 
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit imperdiet vel pellentesque sed.
-
-Ut condimentum ornare rhoncus lorem ipsum dolor sit amet consectetu. Adipiscing elit \href{http://www.example.com}{Nunc Ultrices}.
-
+\end{mdframed}
 \end{minipage} % End the main body - first page mini page
 
 %----------------------------------------------------------------------------------------
@@ -147,64 +132,86 @@ Ut condimentum ornare rhoncus lorem ipsum dolor sit amet consectetu. Adipiscing 
 
 \begin{minipage}[t]{.66\linewidth} % Mini page taking up 66% of the actual page
 
-\hypertarget{thirdnews}{\heading{The Third News Headline}{6pt}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
+\heading{Architecture}{0pt}
 
-\begin{multicols}{2} % Two-column layout
-Morbi tempus bibendum felis a consectetur. In commodo mollis odio et pharetra. In et risus at augue ultricies cursus. Sed sit amet pretium mauris. Vivamus eu luctus ante.  
+\NewList
+\ListProperties(Style1=\bfseries,Style1*=$\bullet$ ,Hide1=1)
+\ListProperties(Style2*=-- ,Hide2=2)
+\ListProperties(Style3*=$\bullet$ ,Hide3=3)
+\ListProperties(Margin1=0cm,Margin2=0.4cm,Margin3=1cm)
+\ListProperties(Space=0cm,Space*=0cm)
+\begin{easylist}
+    @ Reusable and Flexible Plug-in Architecture
+    @@ Phase One: Universal Plug-ins
+    @@@ checks are written in any language
+    @@@ runner passes run-time info to checks via env vars
+    @@@ checks pass results back to runner via stdout
+    @@ Phase Two: SQL Plug-ins
+    @@@ checks are written as SQL
+    @@@ checks are a template that is filled-in by runner
+    @@ Phase Three: Native Plug-ins
+    @@@ checks are written as Python modules
+    @@@ checks inherit from one another
+    @@@ runner imports plug-ins, has tight exception handling, logging, etc
+    @ Check Results Database to support historical forensics and data annotation.
+    @ Both rule and profiling checks
+    @ Version-control-compatible checks and registry - allowing test code to be managed with DDL.
+\end{easylist}
 
-Nunc facilisis, velit nec elementum ultrices, elit justo egestas libero, feugiat vestibulum nulla velit vel eros. Ut feugiat dictum aliquet. In hac habitasse platea dictumst. Pellentesque ullamcorper consequat felis. Aenean sit \textsl{amet} orci non felis dignissim ultricies at quis eros. Sed mi lectus, suscipit nec tempor ac, bibendum non metus.
+%\heading{Frequently Asked Questions}{0pt}
 
-Morbi et sem vel lorem luctus viverra. Mauris elit metus, lobortis eget fermentum vitae, auctor ut felis. Sed magna libero, sagittis sed congue et, dignissim id lorem. 
+%\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
+%
+%\textbf{Q1: Why test data at rest rather than before it gets to Hadoop?}
+%
+%Answer: data should be tested in both places, but it can be most reliably and
+%effectively tested within its target location since Hadoop has more ways of
+%expressing a test against data at rest than ETL processes have, and have access
+%to all data that's been loaded, not just a single batch. Specifically:
+%
+%\begin{itemize}
+%    \item Testing of uniqueness and completeness doesn't work as well in the
+%ETL process since a tested-file may get loaded twice, dropped before load, or
+%in the case of uniqueness may require analysis of multiple batches.
+%    \item Testing of data distributions can be problematic within ETL since the
+%distribution problem may not be revealed until enough data has been processed
+%that some has already been loaded.
+%    \item Policy testing doesn't even apply to ETL at all. This includes
+%directory, file and table naming conventions, ownership, file types,
+%compression, security, completeness and freshness of stats, etc.
+%    \item Certain types of tests are difficult to write and get good
+%performance for within ETL - like foreign key constraints across two tables.
+%    \item Consistency testing between two peer tables (ex: for failover in two
+%separate clusters) with a single ETL process loaded data into one - isn't even
+%possible.
+%\end{itemize}
+%
+%\textbf{Q2: What types of tests should still be performed within the ETL process?}
+%
+%Answer: since the cost of repair is generally lower when invalid data is caught
+%by the ETL, whatever can be effectively tested at that stage should be. This
+%includes, for example:
+%
+%\begin{itemize}
+%    \item Testing of logic conditions completely contained within a single batch of data
+%    \item Testing of field formats, lengths, valid values, unknown values, min and max values, etc
+%    \item Testing of foreign key relationships when practical
+%\end{itemize}
+%
+%\textbf{Q3: Why not write all test results directly into Hadoop rather than SQLite?}
+%
+%Answer: it will eventually, for now, for the sake of development speed, we're writing to SQLite
 
-Vestibulum congue, magna vel sodales rutrum, nisl elit facilisis dolor, vitae sodales purus augue eget justo. Morbi vehicula pharetra felis a elementum. Quisque ipsum metus, rhoncus ac consequat in, bibendum at neque. Aliquam ac nunc turpis. In in faucibus velit. Phasellus tempor, tortor ac malesuada mattis, arcu velit \textsl{venenatis} neque, eget vulputate lorem tellus sed lacus. Nam id dictum lorem.
+\vspace{0.5cm}
 
-Etiam scelerisque nulla at felis ultricies eget rhoncus justo scelerisque. Integer tincidunt accumsan neque, mattis varius nisi molestie sit amet. Praesent vel est eget velit pulvinar rutrum ac ut est. Curabitur purus augue \textsl{Luctrra Vitae / Felis\dots}  a facilisis. Proin semper dignissim justo, at laoreet massa scelerisque vel. Donec erat erat, laoreet eu euismod eu, rutrum id est. Nunc eget odio nisi.
+\heading{Licensing}{0pt}
 
-Suspendisse in quam at lectus rutrum laoreet sed eu lacus. Nam viverra commodo pellentesque suspendisse interdum adipiscing era id tempor nisi laoreet nec. 
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
 
-Ut sollicitudin urna eu urna  \texttt{192.168.*.*} ornare congue. Maecenas eget leo et metus convallis lacinia. 
-
-Quisque mi metus, fringilla eget volutpat id, facilisis ac arcu. Maecenas mauris mi, mattis at varius vitae, tincidunt eu quam. Aliquam bibendum quam porttitor arcu ultricies volutpat. In hac habitasse dictumst.
-
-\BackToContents % Link back to the contents of the newsletter
-
-\end{multicols}
-
-%----------------------------------------------------------------------------------------
-%	IN-TEXT BOX
-%----------------------------------------------------------------------------------------
-
-\begin{mdframed}[style=intextbox,frametitle={}] % Sidebar box
-
-\hypertarget{descriptivebox}{\heading{Descriptive Box}{0pt}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
-
-Nam in turpis scelerisque libero luctus tincidunt sed faucibus lorem ac nisi rhoncus hendrerit. Praesent semper dui non justo rhoncus consequat. Mauris egestas tempus ligula:
-\begin{enumerate}
-\item Quisque mi metu.      
-\item Sem iaculis molestie vulputate.
-\item Suscipit accumsan dui metus sed.
-\item Molestie sed ullamcorper quis, venenatis nec lorem.
-\item Nec pulvinar \textsl{Rutrum Cursus / Ante\dots} command.      
-\item Donec sit amet sem ligula,  \textsl{non} posuere neque. 
-\item In hac habitasse nibh ultricies pellentesque elit risus sollicitudin velit.
-\item Aliquam nec metus sed.
-\end{enumerate}
-
-\BackToContents % Link back to the contents of the newsletter
-
-\end{mdframed}
-
-%----------------------------------------------------------------------------------------
-%	QUOTATION
-%----------------------------------------------------------------------------------------
-
-\hypertarget{quotation}{{\large Customer Quotes}} % \hypertarget provides a label to reference using \hyperlink{label}{link text}
-
-\begin{quote}
-\textsl{``Praesent semper dui non justo rhoncus consequat. Mauris egestas tempus ligula, nec consequat arcu imperdiet eu. Mauris molestie lacinia enim, in dictum enim sagittis ac!!!!''} --- \textrm{John Smith}
-\end{quote}
-
-%----------------------------------------------------------------------------------------
+Hadoop Inspector is protected by the BSD license.  See the file "LICENSE" in
+the source code root directory for the full language or refer to it here:
+\href{http://opensource.org/licenses/BSD-3-Clause}{http://opensource.org/licenses/BSD-3-Clause}\\
+Copyright 2015 Will Farmer and Ken Farmer
 
 \end{minipage}\hfill % End of the main body - second page mini page
 \begin{minipage}[t]{.30\linewidth} % Mini page taking up 30% of the actual page
@@ -215,47 +222,36 @@ Nam in turpis scelerisque libero luctus tincidunt sed faucibus lorem ac nisi rho
 
 \begin{mdframed}[style=sidebar,frametitle={}] % Sidebar box
 
-\heading{Specifications}{0pt}
+\heading{Roadmap}{0pt}
 
-Magna ipsum:
+\centerline {\rule{.75\linewidth}{.25pt}} % Horizontal line
 
-\begin{enumerate}
-\item Maecenas fringilla mi quis dolor vestibulum bibendum scelerisque erat rhoncus.
-\item Ut id est metus, non pharetra leo Etiam in lorem sit amet sapien semper iaculis vel eget risus. Morbi consectetur gravida eros, non tincidunt ligula hendrerit vel.
-\item Donec venenatis metus vitae urna malesuada vestibulum vitae eget mauris mauris sed orci dui, eget fringilla arcu. Nunc scelerisque tortor ut enim laoreet eget scelerisque ante ultricies.
-\item Ut nec lacus vel ante molestie ac nec eros:
-
-\textsl{Ipsum auctor} sit amet sapien semper.
-
-\textsl{Eget fringilla} sed ut augue nec turpis vestibulum imperdiet.
-
-\textsl{Tincidunt} ut id est metus, non pharetra leo.
-
-\textsl{Vel velit venenatis } morbi consequat elementum eros, at pretium lectus gravida quis.
-
-\textsl{Luctus nisi} morbi consectetur gravida eros, non tincidunt ligula hendrerit vel.
-
-\textsl{Eget Odio} zunc scelerisque tortor ut enim laoreet eget scelerisque ante ultricie mollis lorem a sapien scelerisque varius.
-\end{enumerate}
-
-\BackToContents % Link back to the contents of the newsletter
+\NewList
+\ListProperties(Style1=\bfseries,Style1*=$\bullet$ ,Hide1=1)
+\ListProperties(Style2*=-- ,Hide2=2)
+\ListProperties(Margin1=0cm,Margin2=0.1cm)
+\ListProperties(Space=-0.1cm,Space*=-0.1cm)
+\begin{easylist}
+    @ 2015-10-01:\\Initial Release
+    @@ Runner: initial release
+    @@ Web Server: initial release
+    @ 2015-11-01:\\Solidification
+    @ 2015-12-01:\\Functionality
+    @@ Support for native-SQL checks
+    @ Future
+\end{easylist}
 
 \end{mdframed}\hfill
-
-%----------------------------------------------------------------------------------------
 
 \centering
 \begin{minipage}[t]{.95\linewidth}
 \textbf{Contact Information:}\\
-Vivamus Technologies, Ltd.\\
-1234 Street Name,\\
-City, Country, Post Code\\
-\href{http://www.example.com}{http://www.ornarejustoultricies.com}\\
-\href{http://www.example.com}{http://www.elementumsapien.com}\\
-\href{http://www.example.com}{http://www.nuncultrices.com} 
+Will Farmer, Ken Farmer\\
+\href{mailto:willzfarmer@gmail.com}{willzfarmer@gmail.com}\\
+\href{www.will-farmer.com}{www.will-farmer.com}\\
+\href{mailto:kenfar@gmail.com}{kenfar@gmail.com}\\
+\href{www.linkedin.com/in/kenfar}{www.linkedin.com/in/kenfar}
 \end{minipage}
-
-%----------------------------------------------------------------------------------------
 
 \end{minipage} % End of the sidebar mini page
 
