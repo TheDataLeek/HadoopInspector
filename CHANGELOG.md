@@ -1,3 +1,5 @@
+0.1.1 - removed runtests - unnecessary test bundle for pytests
+
 0.1.0 - updates to changelog & _version to reflect version.
 
 0.0.3 - refactored server to run on python2.7
