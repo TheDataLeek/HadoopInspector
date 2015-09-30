@@ -1,3 +1,5 @@
+0.1.0 - Initial release
+
 0.0.3 - refactored server to run on python2.7 - upgraded runner to run
 setup checks and support incremental checks of partitioned tables
 
