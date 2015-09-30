@@ -369,7 +369,9 @@ def table(instance, database, table):
 @app.route('/inspect/<instance>/<database>/<table>/<check>', methods=['GET', 'POST'])
 def checkdetails(instance, database, table, check):
     data_gen = FrontEnd()
-    raw_history = data_gen.submit_query(('SELECT * '
+    raw_history = data_gen.submit_query(('SELECT check_type, '
+                                    'check_mode, check_unit, check_status, run_id, '
+                                    'run_start_timestamp, run_stop_timestamp '
                                 'FROM check_results '
                                 'WHERE instance_name=? '
                                 'AND database_name=? '
@@ -411,7 +413,8 @@ def checkdetails(instance, database, table, check):
     history['month'] = history['month'][-32:]
     history['week'] = history['week'][-8:]
 
-    desc = 'Proin suscipit luctus orci placerat fringilla. Donec hendrerit laoreet risus eget adipiscing. Suspendisse in urna ligula, a volutpat mauris. Sed enim mi, bibendum eu pulvinar vel, sodales vitae dui. Pellentesque sed sapien lorem, at lacinia urna. In hac habitasse platea dictumst. Vivamus vel justo in leo laoreet ullamcorper non vitae lorem. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum ullamcorper rutrum.'
+    #desc = 'Proin suscipit luctus orci placerat fringilla. Donec hendrerit laoreet risus eget adipiscing. Suspendisse in urna ligula, a volutpat mauris. Sed enim mi, bibendum eu pulvinar vel, sodales vitae dui. Pellentesque sed sapien lorem, at lacinia urna. In hac habitasse platea dictumst. Vivamus vel justo in leo laoreet ullamcorper non vitae lorem. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum ullamcorper rutrum.'
+    desc = ''
 
     content = render_template('checkdetails.html',
                         instance=instance,
