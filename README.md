@@ -29,7 +29,7 @@ Hadoop-Inspector was built to address the needs to manage data quality within la
 complex, and constantly loaded clusters that were unfulfilled by simple QA testing
 during development.  It offers a solution more like an automobile assembly line:
 continuous quality control (QC) that can account for changes to upstream systems,
-accidental changes to production, data migration errors, and ETL/Ingest  defects.
+accidental changes to production, data migration errors, and ETL/Ingest defects.
 
 
 ##Current Status
