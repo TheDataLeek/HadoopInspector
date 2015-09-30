@@ -33,7 +33,7 @@ setup(name             = 'hadoop-inspector',
       url              = 'http://github.com/kenfar/hadoop-inspector',
       license          = 'BSD'             ,
       classifiers=[
-            'Development Status :: 4 - Beta'                         ,
+            'Development Status :: 3 - Alpha'                        ,
             'Environment :: Console'                                 ,
             'Intended Audience :: Information Technology'            ,
             'Intended Audience :: Science/Research'                  ,
