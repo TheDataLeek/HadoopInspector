@@ -1,3 +1,5 @@
+0.1.2 - fixed check display issues
+
 0.1.1 - removed runtests - unnecessary test bundle for pytests
 
 0.1.0 - updates to changelog & \_version to reflect version.
