@@ -369,7 +369,9 @@ def table(instance, database, table):
 @app.route('/inspect/<instance>/<database>/<table>/<check>', methods=['GET', 'POST'])
 def checkdetails(instance, database, table, check):
     data_gen = FrontEnd()
-    raw_history = data_gen.submit_query(('SELECT * '
+    raw_history = data_gen.submit_query(('SELECT check_type, '
+                                    'check_mode, check_unit, check_status, run_id, '
+                                    'run_start_timestamp, run_stop_timestamp '
                                 'FROM check_results '
                                 'WHERE instance_name=? '
                                 'AND database_name=? '
