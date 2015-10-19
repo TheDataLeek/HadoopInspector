@@ -11,6 +11,8 @@ import sys, os, shutil, stat
 import tempfile, json
 import subprocess
 import collections
+import logging
+import logging.handlers
 from pprint import pprint as pp
 import pytest
 
@@ -26,13 +28,45 @@ class TestSetupVars(object):
 
     def setup_method(self, method):
         self.registry      = None
+        self.instance      = 'foo'
+        self.database      = 'bar'
         self.check_repo    = None
         self.check_results = None
+        self.log_dir       = tempfile.mkdtemp(prefix='hapinsp_run_logs_')
         self.check_runner  = mod.CheckRunner(self.registry, self.check_repo,
-                              self.check_results, instance='foo', database='bar')
+                              self.check_results, instance='foo', database='bar', run_log_dir=self.log_dir)
+        self.logger        = self._get_logger(table='tab1', check='ck1')
+
+    def _get_logger(self, table, check):
+
+        def mkdirs(path):
+            try:
+                os.makedirs(path)
+            except OSError as exc:
+                if exc.errno != errno.EEXIST or not os.path.isdir(path):
+                    raise
+
+        assert isdir(self.log_dir)
+        check_log_dir = pjoin(self.log_dir, self.instance, self.database, table, check)
+        mkdirs(check_log_dir)
+        log_filename = pjoin(check_log_dir, 'check.log')
+
+        #--- create logger
+        self.logger = logging.getLogger('CheckLogger')
+        self.logger.setLevel('DEBUG')
+
+        #--- add formatting:
+        log_format = '%(asctime)s : %(name)-12s : %(levelname)-8s : %(message)s'
+        date_format = '%Y-%m-%d %H.%M.%S'
+        formatter = logging.Formatter(log_format, date_format)
+
+        #--- create rotating file handler
+        self.file_handler = logging.handlers.RotatingFileHandler(log_filename, maxBytes=1000000, backupCount=20)
+        self.file_handler.setFormatter(formatter)
+        self.logger.addHandler(self.file_handler)
 
     def teardown_method(self, method):
-        pass
+        shutil.rmtree(self.log_dir)
 
     def test_parse_setup_check_results__with_good_data(self):
         kv = {"hapinsp_tablecustom_year":2015,
@@ -41,28 +75,28 @@ class TestSetupVars(object):
         raw_output = """{"hapinsp_tablecustom_year":2015,
                          "hapinsp_tablecustom_month": 4,
                          "hapinsp_tablecustom_day": 30} """
-        setup_vars = mod.SetupVars(raw_output)
+        setup_vars = mod.SetupVars(raw_output, self.logger)
         assert setup_vars.tablecustom_vars == kv
 
     def test_parse_setup_check_results__with_no_data(self):
         kv = {}
         raw_output = """{}"""
-        setup_vars = mod.SetupVars(raw_output)
+        setup_vars = mod.SetupVars(raw_output, self.logger)
         assert setup_vars.tablecustom_vars == kv
 
     def test_parse_setup_check_results__with_None_data(self):
         with pytest.raises(TypeError):
-           setup_vars = mod.SetupVars(None)
+           setup_vars = mod.SetupVars(None, self.logger)
 
     def test_parse_setup_check_results__with_corrupt_struct(self):
         raw_output = """{"""
         with pytest.raises(ValueError):
-           setup_vars = mod.SetupVars("""{""")
+           setup_vars = mod.SetupVars("""{""", self.logger)
 
     def test_parse_setup_check_results__with_bad_key(self):
         raw_output = """{"hapinsp_tableblah_foo": 2015 } """
         with pytest.raises(ValueError):
-            setup_vars = mod.SetupVars(raw_output)
+            setup_vars = mod.SetupVars(raw_output, self.logger)
 
 
 
@@ -72,8 +106,9 @@ class TestVars(object):
         self.registry      = None
         self.check_repo    = None
         self.check_results = None
+        self.log_dir       = tempfile.mkdtemp(prefix='hapinsp_run_log_')
         self.check_runner  = mod.CheckRunner(self.registry, self.check_repo,
-                              self.check_results, instance='foo', database='bar')
+                              self.check_results, instance='foo', database='bar', run_log_dir=self.log_dir)
 
     def teardown_method(self, method):
         pass
