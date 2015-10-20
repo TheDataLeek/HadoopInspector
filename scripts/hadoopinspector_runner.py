@@ -12,6 +12,7 @@ import sys
 import os
 import argparse
 import logging
+import logging.handlers
 import collections
 import subprocess
 import json
@@ -22,20 +23,24 @@ from os.path import join as pjoin
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import hadoopinspector.core as core
 
+runner_logger = None
 
 
 def main():
-    args       = get_args()
-    configure_logger(args.log_dir)
+    global runner_logger
+    args = get_args()
+    runner_logger = setup_runner_logger(args.log_dir, args.log_level, args.log_to_console)
+    runner_logger.info("runner starting now")
 
-    registry   = core.Registry()
+    registry = core.Registry()
     registry.load_registry(args.registry_filename)
     registry.generate_db_registry(args.instance, args.database, args.table, args.check)
 
-    check_repo     = core.CheckRepo(args.check_dir)
-    check_results  = core.CheckResults(db_fqfn=args.results_filename)
+    check_repo = core.CheckRepo(args.check_dir)
+    check_results = core.CheckResults(db_fqfn=args.results_filename)
 
-    checker    = core.CheckRunner(registry, check_repo, check_results, args.instance, args.database)
+    checker = core.CheckRunner(registry, check_repo, check_results, args.instance, args.database,
+                               args.log_dir, args.log_level)
     checker.add_db_var('hapinsp_instance', args.instance)
     checker.add_db_var('hapinsp_database', args.database)
     checker.run_checks_for_tables(args.table)
@@ -44,6 +49,7 @@ def main():
         for rec in checker.results.get_formatted_results(args.detail_report):
             print(rec)
 
+    runner_logger.info("runner terminating now with rc: %s", checker.results.get_max_rc())
     sys.exit(checker.results.get_max_rc())
 
 
@@ -83,6 +89,15 @@ def get_args():
     parser.add_argument('--log-dir',
                         required=True,
                         help='specifies directory to log output to')
+    parser.add_argument('--console-log',
+                        action='store_true',
+                        dest='log_to_console')
+    parser.add_argument('--no-console-log',
+                        action='store_false',
+                        dest='log_to_console')
+    parser.add_argument('--log-level',
+                        default='debug',
+                        choices=['debug', 'info', 'warning', 'error', 'critical'])
 
     args = parser.parse_args()
 
@@ -102,11 +117,41 @@ def get_args():
 
 
 
-def configure_logger(logdir):
+def setup_runner_logger(logdir, log_level, log_to_console):
     assert isdir(logdir)
-    logfile = pjoin(logdir, 'runner.log')
-    logging.basicConfig(filename=logfile,
-                        level=logging.DEBUG)
+    assert log_level in ('debug', 'info', 'warning', 'error', 'critical')
+    assert log_to_console in (True, False)
+    log_filename = pjoin(logdir, 'runner.log')
+
+    #--- create logger
+    runner_logger = logging.getLogger('RunnerLogger')
+    runner_logger.setLevel(log_level.upper())
+
+    #--- add formatting:
+    log_format = '%(asctime)s : %(name)-12s : %(levelname)-8s : %(message)s'
+    date_format = '%Y-%m-%d %H.%M.%S'
+    runner_formatter = logging.Formatter(log_format, date_format)
+
+    #--- create rotating file handler
+    file_handler = logging.handlers.RotatingFileHandler(log_filename, maxBytes=1000000, backupCount=20)
+    file_handler.setFormatter(runner_formatter)
+    runner_logger.addHandler(file_handler)
+
+    #--- create console handler:
+    if log_to_console:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(runner_formatter)
+        runner_logger.addHandler(console_handler)
+
+    #--- ensure any uncaught exceptions get logged:
+    sys.excepthook = excepthook
+
+    return runner_logger
+
+
+def excepthook(*args):
+    runner_logger.critical('uncaught exception - exiting now', exc_info=args)
+    sys.exit(1)
 
 
 if __name__ == '__main__':

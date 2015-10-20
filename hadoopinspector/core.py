@@ -8,13 +8,15 @@ Copyright 2015 Will Farmer and Ken Farmer
 
 import os, sys, time, datetime, subprocess
 import json
+import logging
+import errno
 from pprint import pprint as pp
 import copy
 import validictory
 from os.path import isdir, isfile, exists, dirname, basename
 from os.path import join as pjoin
 import sqlite3
-
+import demjson
 
 
 class Registry(object):
@@ -44,15 +46,40 @@ class Registry(object):
         # lets not create the registries, make it more obvious that load & create funcs must be run.
         self.full_registry  = {}
         self.db_registry    = {} # filtered to just include checks needed for a run
+        self.logger = logging.getLogger('RunnerLogger')
+
+    def _abort(self, msg):
+        if self.logger:
+            self.logger.critical(msg)
+        else:
+            print(msg)
+        sys.exit(1)
 
     def load_registry(self, fqfn):
         """
+        loads registry json file into self.full_registry.
+        Does no validation other than requiring the file to be valid json.
+
         :param fqfn     - str
         """
         if not isfile(fqfn):
-            abort("Invalid registry file: %s" % fqfn)
-        with open(fqfn) as f:
-            self.full_registry = json.load(f)
+            self._abort("Invalid registry file: %s" % fqfn)
+
+        with open(fqfn) as infile:
+            json_str = infile.read()
+            try:
+                self.full_registry, reg_errors, reg_stats = demjson.decode(json_str, return_errors=True)
+            except demjson.JSONDecodeError as e:
+                self.logger.critical("registry json load error: %s" % e)
+                for err in reg_errors:
+                    self.logger.critical(err)
+                self._abort("Invalid registry file - could not load/decode")
+            else:
+                if reg_errors:
+                    self.logger.critical("registry json load error")
+                    for err in reg_errors:
+                        self.logger.critical(err)
+                    self._abort("Invalid registry file - json errors discovered during load")
 
     def generate_db_registry(self, instance, db, table=None, check=None):
         """ Generate the db registry from the full registry.  Optionally, only
@@ -68,11 +95,13 @@ class Registry(object):
         assert db is not None
 
         if not self.full_registry:
+            self.logger.critical('invalid registry file - it is empty')
             raise EOFError("Registry is empty")
 
         # just in case provided instance & db aren't in loaded full_registry:
         if instance not in self.full_registry or db not in self.full_registry[instance]:
-            pp(self.full_registry)
+            #pp(self.full_registry)
+            self.logger.critical("No registry found for instance (%s) & db (%s)", instance, db)
             raise EOFError("No registry found for instance (%s) & db (%s)" % (instance, db) )
 
         for full_table in self.full_registry[instance][db]:
@@ -83,6 +112,7 @@ class Registry(object):
                         self.add_check(instance, db, full_table, full_check, registry=self.db_registry, **ck)
 
         if len(self.db_registry.keys()) == 0:
+            self.logger.critical("No registry found for instance (%s) & db (%s)", instance, db)
             raise EOFError("No registry found for instance & db")
 
 
@@ -142,8 +172,8 @@ class Registry(object):
                'check_scope':   check_scope }
         for key in checkvars:
             if not key.startswith('hapinsp_checkcustom_'):
-                print("Invalid registry checkvar: %s" % key)
-                sys.exit(1)
+                self.logger.critical("Invalid registry check (%s) - invalid checkvar (%s)", check, key)
+                self._abort("Invalid registry checkvar: %s" % key)
             registry[instance][db][table][check][key] = checkvars[key]
 
 
@@ -164,10 +194,28 @@ class Registry(object):
 
         try:
             with open(filename) as infile:
-                reg = json.load(infile)
-        except ValueError:
-            abort("Invalid json file")
-        self.validate(reg)
+                json_str = infile.read()
+                try:
+                    python_obj, reg_errors, reg_stats = demjson.decode(json_str, return_errors=True)
+                except demjson.JSONDecodeError as e:
+                    self.logger.critical("registry json validation error: %s" % e)
+                    for err in reg_errors:
+                        self.logger.critical(err)
+                    self._abort("Invalid registry file - could not decode")
+                else:
+                    if reg_errors:
+                        self.logger.critical("registry json validation error")
+                        for err in reg_errors:
+                            self.logger.critical(err)
+                        self._abort("Invalid registry file - json errors discovered")
+        except IOError:
+            self._abort("Invalid registry file - could not open")
+
+        try:
+            self.validate(python_obj)
+        except:
+            self.logger.critical("registry file validation failed")
+            raise
 
     def validate(self, registry):
 
@@ -207,31 +255,28 @@ class Registry(object):
                 else:
                     validictory.validate(check_reg, regular_check_schema)
             except validictory.validator.RequiredFieldValidationError as e:
-                pp(check_reg)
-                abort("Registry error on field: %s" % e)
+                self._abort("Registry error on field: %s" % e)
             except validictory.FieldValidationError as e:
-                pp(check_reg)
-                abort("Registry error on field: %s with value: %s with check_type: %s" \
+                self._abort("Registry error on field: %s with value: %s with check_type: %s" \
                      % (e.fieldname, check_reg[e.fieldname], check_type))
             except:
-                abort("Error encountered while processing Registry")
+                self._abort("Error encountered while processing Registry")
 
-        #pp(registry)
         if not isinstance(registry, dict):
-            abort(msg="Invalid registry")
+            self._abort(msg="Invalid registry")
         for instance in registry:
             if not isinstance(registry[instance], dict):
-                abort(msg="Invalid registry instance: %s" % instance)
+                self._abort(msg="Invalid registry instance: %s" % instance)
             for db in registry[instance]:
                 if not isinstance(registry[instance][db], dict):
-                    abort(msg="Invalid registry db: %s.%s" % (instance, db))
+                    self._abort(msg="Invalid registry db: %s.%s" % (instance, db))
                 for table in registry[instance][db]:
                     if not isinstance(registry[instance][db][table], dict):
-                        abort(msg="Invalid registry table: %s.%s.%s" % (instance, db, table))
+                        self._abort(msg="Invalid registry table: %s.%s.%s" % (instance, db, table))
                     for check in registry[instance][db][table]:
                         check_type = registry[instance][db][table][check].get('check_type', None)
                         if check_type is None:
-                            abort(msg="Missing check_type for: %s.%s.%s" % (instance, db, table ))
+                            self._abort(msg="Missing check_type for: %s.%s.%s" % (instance, db, table ))
                         else:
                             validate_check(registry[instance][db][table][check], check_type)
 
@@ -243,7 +288,8 @@ class CheckRepo(object):
     """
     def __init__(self, check_dir):
         self.check_dir = check_dir
-        self.repo      = {}
+        self.repo = {}
+        self.logger = logging.getLogger('RunnerLogger')
         for check_fn in os.listdir(self.check_dir):
             self.repo[check_fn] = {}
             self.repo[check_fn]['fqfn'] = pjoin(self.check_dir, check_fn)
@@ -257,6 +303,24 @@ class CheckResults(object):
         self.start_dt = datetime.datetime.utcnow()
         self.results = {}
         self.setup_results = {}
+        self.logger = logging.getLogger('RunnerLogger')
+
+        #--- create database & table if necessary:
+        if not isfile(self.db_fqfn):
+            self.logger.info("warning: sqlitedb not found - will create database")
+            create_sqlite_db(self.db_fqfn)
+        conn = sqlite3.connect(self.db_fqfn)
+        if not istable(conn, 'check_results'):
+            self.logger.info("warning: no check_results table found - will create database")
+            create_sqlite_db(self.db_fqfn)
+
+
+    def _abort(self, msg):
+        if self.logger:
+            self.logger.critical(msg)
+        else:
+            print(msg)
+        sys.exit(1)
 
     def add(self, instance, database, table, check, violations, rc,
             check_status=None,
@@ -359,17 +423,7 @@ class CheckResults(object):
         #todo: add column to hold partitioning keys for incremental testing
         #todo: add "logical_delete" column for the deletes
         """
-        if self.db_fqfn is None:
-            abort("Error: no sqlite file name provided to CheckResults")
-        if not isfile(self.db_fqfn):
-            print("warning: sqlitedb not found - will create database")
-            create_sqlite_db(self.db_fqfn)
-
         conn = sqlite3.connect(self.db_fqfn)
-        if not istable(conn, 'check_results'):
-            print("warning: no check_results table found - will create database")
-            create_sqlite_db(self.db_fqfn)
-
         stop_dt = datetime.datetime.utcnow()
         run_id  = 0
         cur  = conn.cursor()
@@ -423,8 +477,9 @@ class CheckResults(object):
         try:
             c.execute(sql.format(inst=inst, db=db, tb=table, cn=setup_check))
         except sqlite3.OperationalError as e:
-            print("get_prior_setup_vars failed!")
-            print(e)
+            self.logger.critical("get_prior_setup_vars failed!")
+            self.logger.critical(e)
+            self._abort("get_prior_setup_vars failed!")
         results = c.fetchall()
         conn.commit()
         conn.close()
@@ -460,16 +515,17 @@ def create_sqlite_db(db_fqfn):
     c.execute(check_results_cmd)
     conn.commit()
     conn.close()
-    #print("results.sqlite database successfully created")
 
 
 
 
 class CheckRunner(object):
 
-    def __init__(self, registry, check_repo, check_results, instance, database):
+    def __init__(self, registry, check_repo, check_results, instance, database, run_log_dir, log_level='debug'):
         """
         """
+        assert isdir(run_log_dir)
+        assert log_level in ('debug', 'info', 'warning', 'error', 'critical')
         self.repo     = check_repo
         self.registry = registry
         self.results  = check_results
@@ -479,10 +535,70 @@ class CheckRunner(object):
         self.check_vars = []
         self.table_vars = []
         self.prior_table_vars = []
+        self.run_log_dir = run_log_dir
+        self.log_level = log_level
+        self.check_file_handler = None
+        self.check_logger = None
+        self.run_logger = logging.getLogger('RunnerLogger')
+
+    def _abort(self, msg):
+        if self.check_logger:
+            self.check_logger.critical(msg)
+        else:
+            print(msg)
+        sys.exit(1)
+
+
+    def both_logger(self, level, msg):
+        assert level in ('error', 'critical')
+
+        if level == 'error':
+            self.run_logger.error(msg)
+            self.check_logger.error(msg)
+        elif level == 'critical':
+            self.run_logger.critical(msg)
+            self.check_logger.critical(msg)
+
+
+    def _get_logger(self, table, check):
+
+        def mkdirs(path):
+            try:
+                os.makedirs(path)
+            except OSError as exc:
+                if exc.errno != errno.EEXIST or not os.path.isdir(path):
+                    raise
+
+        assert isdir(self.run_log_dir)
+        check_log_dir = pjoin(self.run_log_dir, self.instance, self.database, table, check)
+        mkdirs(check_log_dir)
+        log_filename = pjoin(check_log_dir, 'check.log')
+
+        #--- close any prior handler:
+        if self.check_logger:
+            self.check_logger.removeHandler(self.check_file_handler)
+        if self.check_logger:
+            if self.check_logger.handlers:
+                self.check_logger.handlers[0].close()
+
+        #--- create logger
+        self.check_logger = logging.getLogger('CheckLogger')
+        self.check_logger.setLevel(self.log_level.upper())
+
+        #--- add formatting:
+        log_format = '%(asctime)s : %(name)-12s : %(levelname)-8s : %(message)s'
+        date_format = '%Y-%m-%d %H.%M.%S'
+        check_formatter = logging.Formatter(log_format, date_format)
+
+        #--- create rotating file handler
+        self.check_file_handler = logging.handlers.RotatingFileHandler(log_filename, maxBytes=1000000, backupCount=20)
+        self.check_file_handler.setFormatter(check_formatter)
+        self.check_logger.addHandler(self.check_file_handler)
+
 
     def add_db_var(self, key, value):
         if not key.startswith('hapinsp_'):
-            print("Error: invalid table_var of: %s" % key)
+            self.run_logger.error("invalid table_var of: %s" % key)
         else:
             self.db_vars.append((key, value))
             os.environ[key] = str(value)
@@ -495,7 +611,7 @@ class CheckRunner(object):
 
     def add_table_var(self, key, value):
         if not key.startswith('hapinsp_table'):
-            print("Error: invalid table_var of: %s" % key)
+            self.run_logger.error("invalid table_var of: %s" % key)
         else:
             self.table_vars.append((key, value))
             os.environ[key] = str(value)
@@ -508,7 +624,7 @@ class CheckRunner(object):
 
     def add_prior_table_var(self, key, value):
         if not key.startswith('hapinsp_table'):
-            print("Error: invalid table_var of: %s" % key)
+            self.run_logger.error("invalid table_var of: %s" % key)
         else:
             adj_key = key + '_prior'
             self.prior_table_vars.append((adj_key, value))
@@ -524,7 +640,7 @@ class CheckRunner(object):
         if key == 'hapinsp_check_mode':
             pass
         elif not key.startswith('hapinsp_checkcustom_'):
-            print("Invalid checkcustom var: %s" % key)
+            self.run_logger.error("Invalid checkcustom var: %s" % key)
             return
         self.check_vars.append((key, value))
         os.environ[key] = (value)
@@ -578,12 +694,15 @@ class CheckRunner(object):
                              check_type='setup', setup_vars='')
             return
 
+        # configure logger:
+        self._get_logger(table, setup_check)
+        self.check_logger.info('check started')
+
         # write prior setup to env:
         prior_setup_vars_string = self.results.get_prior_setup_vars(self.instance, self.database, table, setup_check)
         if prior_setup_vars_string:
-            prior_setup_vars = SetupVars(prior_setup_vars_string)
+            prior_setup_vars = SetupVars(prior_setup_vars_string, self.check_logger)
             for key, val in prior_setup_vars.tablecustom_vars.items():
-  
                 self.add_prior_table_var(key, val)
             self.add_prior_table_var('hapinsp_tablecustom_internal_rc_prior', prior_setup_vars.internal_rc)
 
@@ -597,20 +716,20 @@ class CheckRunner(object):
         try:
             check_fn           = self.repo.repo[reg_check['check_name']]['fqfn']
         except KeyError:
-            print("Error: registry check not found: %s" % reg_check['check_name'])
+            self.both_logger('critical', "registry check not found: %s" % reg_check['check_name'])
             sys.exit(1)
         raw_output, check_rc        = self._run_check_file(check_fn)
 
         # parse & record the output:
         try:
-            setup_vars = SetupVars(raw_output)
+            setup_vars = SetupVars(raw_output, self.check_logger)
         except ValueError as e:
-            setup_vars   = SetupVars({})
+            setup_vars   = SetupVars({}, self.check_logger)
             table_status = 'inactive'
             rc           = 201
-            print("Failed setup_check: %s" % setup_check)
-            print("Error: JSON error: %s" % e)
-            printerr("Error on parsing ", setup_check, raw_output)
+            self.both_logger('error', "Failed setup_check: %s" % setup_check)
+            self.check_logger.error("Error: JSON error: %s" % e)
+            self.check_logger.error("Error on parsing %s %s", setup_check, raw_output)
         else:
             rc = setup_vars.internal_rc
             for key, val in setup_vars.tablecustom_vars.items():
@@ -639,23 +758,27 @@ class CheckRunner(object):
                 self.add_check_var(key, val)
         self.add_check_var('hapinsp_check_mode', reg_check['check_mode'])
 
+        # configure logger:
+        self._get_logger(table, check)
+        self.check_logger.info('check started')
+
         try:
             check_fn           = self.repo.repo[reg_check['check_name']]['fqfn']
         except KeyError:
-            print("Error: registry check not found: %s" % reg_check['check_name'])
+            self.both_logger('Error', 'registry check not found: %s' % reg_check['check_name'])
             sys.exit(1)
         raw_output, check_rc        = self._run_check_file(check_fn)
 
         try:
-            check_vars   = CheckVars(raw_output)
+            check_vars   = CheckVars(raw_output, self.check_logger)
             actual_mode  = check_vars.mode
         except ValueError as e:
             count        = None
             int_rc       = None
             rc           = 202
-            print("Failed check: %s" % check)
-            print("Error: JSON error: %s" % e)
-            printerr("Error on parsing ", check_fn, raw_output)
+            self.both_logger('ERROR', "Failed check: %s" % check)
+            self.check_logger.error("Error: JSON error: %s" % e)
+            self.check_logger.error("Error on parsing  %s  %s", check_fn, raw_output)
             actual_mode  = None
         else:
             count       = check_vars.violation_cnt
@@ -684,12 +807,13 @@ class CheckRunner(object):
 
 class CheckVars(object):
 
-    def __init__(self, raw_output):
-        self.reserved_keys    = ['rc', 'violations', 'mode']
+    def __init__(self, raw_output, check_logger):
+        self.reserved_keys    = ['rc', 'violations', 'mode', 'log']
         self.raw_output       = raw_output
         self.internal_rc      = None
         self.violation_cnt    = None
         self._mode            = None
+        self.check_logger     = check_logger
         self._parse_raw_output()
 
     @property
@@ -712,9 +836,9 @@ class CheckVars(object):
         try:
             output_vars = json.loads(self.raw_output)
         except (TypeError, ValueError):
-            print("Error: invalid check results: %s" % self.raw_output)
+            self.check_logger.error("invalid check results: %s" % self.raw_output)
             if self.raw_output is None:
-                print("Error: check results raw_output is None")
+                self.check_logger.error("check results raw_output is None")
             raise
 
         for key, val in output_vars.items():
@@ -723,26 +847,36 @@ class CheckVars(object):
                     self.internal_rc = val
                 elif key == 'mode':
                     self.mode = val
+                elif key == 'log':
+                    self.check_logger.info(val)
                 elif key == 'violations':
                     self.violation_cnt = val
                     if not isnumeric(val):
-                        print("Invalid violations field")
+                        self.check_logger.error("invalid violations field")
                         self.violations_cnt = -1
             else:
-                raise ValueError("Invalid check result - key has bad name: %s" % key)
+                msg = "Invalid check result - key has bad name: %s" % key
+                self.check_logger.error(msg)
+                raise ValueError(msg)
+
+        if self.violation_cnt is None:
+            raise ValueError('invalid violation_cnt')
+        elif self.internal_rc is None:
+            raise ValueError('invalid internal_rc')
 
 
 
 class SetupVars(object):
 
-    def __init__(self, raw_output):
-        self.reserved_keys    = ['rc', 'table_status', 'mode']
+    def __init__(self, raw_output, check_logger):
+        self.reserved_keys    = ['rc', 'table_status', 'mode', 'log']
         self.raw_output       = raw_output
         self.tablecustom_vars = {}
         self.internal_rc      = -1
         self.table_status     = 'active'
         self._table_mode      = None
         self._parse_raw_output()
+        self.check_logger     = check_logger
 
     @property
     def table_mode(self):
@@ -784,6 +918,8 @@ class SetupVars(object):
                     self.internal_rc = val
                 elif key == 'table_status' and val:
                     self.table_status = val
+                elif key == 'log':
+                    self.check_logger.info(val)
                 elif key == 'mode' and val:
                     self.table_mode = val
             elif self._is_custom_var(key):

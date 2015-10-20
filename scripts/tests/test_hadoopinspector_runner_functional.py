@@ -35,7 +35,7 @@ class TestWithMockedCheckFiles(object):
         self.log_dir   = tempfile.mkdtemp(prefix='hadinsp_l_')
         self.check_dir = tempfile.mkdtemp(prefix='hadinsp_c_')
         self.misc_dir  = tempfile.mkdtemp(prefix='hadinsp_m_')
-        self.registry_fqfn = None
+        self.registry_fqfn = pjoin(self.misc_dir, 'registry.json')
         self.results_fqfn = pjoin(self.misc_dir, 'results.sqlite')
         self.inst      = 'inst1'
         self.db        = 'db1'
@@ -60,6 +60,7 @@ class TestWithMockedCheckFiles(object):
                '--results-filename', self.results_fqfn,
                '--check-dir', self.check_dir,
                '--log-dir', self.log_dir,
+               '--console-log',
                '--report' ]
         if table:
             cmd.extend(['--table', table])
@@ -172,6 +173,8 @@ class TestWithMockedCheckFiles(object):
         self._add_setup_check(table, key='hapinsp_tablecustom_foo', value='bar')
         self._add_env_rule_check(table, key='hapinsp_tablecustom_foo', value='bar')
         report, run_rc = self.run_cmd()
+        print(run_rc)
+        print(report)
         testtooling.report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
         assert str(run_rc) == expected_run_rc
 

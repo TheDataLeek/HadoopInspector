@@ -8,6 +8,7 @@ Copyright 2015 Will Farmer and Ken Farmer
 
 from __future__ import division
 import sys, os, shutil, stat
+import logging
 import time, datetime
 import tempfile, json
 import subprocess
@@ -30,16 +31,97 @@ import hadoopinspector.core as mod
 
 Record = collections.namedtuple('Record', 'table check check_rc violation_cnt')
 
-
+#logging.getLogger('RunnerLogger')
+logging.basicConfig()
 
 class TestRegistry(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='hadinsp_')
+        #os.mkdir('/tmp/foo')
+        #self.temp_dir = '/tmp/foo'
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
 
+    def test_loading_good_registry(self):
+        good_data =    { "prod1": {
+                            "AssetEvent": {
+                                "asset": {
+                                    "rule_pk1": {
+                                        "check_type":   "rule",
+                                        "check_name":   "rule_uniqueness",
+                                        "check_mode":   "full",
+                                        "check_scope":  "row",
+                                        "check_status": "active",
+                                        "hapinsp_checkcustom_cols": 999
+                                    }
+                                },
+                                "cust": {
+                                    "rule_pk1": {
+                                        "check_type":   "rule",
+                                        "check_name":   "rule_uniqueness",
+                                        "check_mode":   "full",
+                                        "check_scope":  "row",
+                                        "check_status": "active",
+                                        "hapinsp_checkcustom_cols": 999
+                                    }
+                                }
+                            }
+                         }
+                      }
+        with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
+            json.dump(good_data, f)
+        reg = mod.Registry()
+        reg.load_registry(pjoin(self.temp_dir, 'registry.json'))
+        reg.validate_file(pjoin(self.temp_dir, 'registry.json'))
+
+    def test_loading_bad_registry_extra_comma(self):
+        # extra comma before last field in registry
+        bad_data = ("""{"prod1": {"AssetEvent": {"asset": {"rule_pk1": {"check_type": "rule", """
+                    """ "check_name": "rule_uniqueness", "check_mode": "full", "check_scope": "row", """
+                    """ "hapinsp_checkcustom_cols": 999, "check_status": "active"}}, """
+                    """ "cust": {"rule_pk1": {"check_type": "rule", "check_name": "rule_uniqueness", """
+                    """ "check_mode": "full", "check_scope": "row", "hapinsp_checkcustom_cols": 999,, """
+                    """ "check_status": "active"}}}}} """)
+
+        with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
+            f.write(bad_data)
+        reg = mod.Registry()
+        with pytest.raises(SystemExit):
+            reg.load_registry(pjoin(self.temp_dir, 'registry.json'))
+
+
+    def test_loading_bad_registry_unquoted_key(self):
+        # check_status at end of registry is unquoted
+        bad_data = ("""{"prod1": {"AssetEvent": {"asset": {"rule_pk1": {"check_type": "rule", """
+                    """ "check_name": "rule_uniqueness", "check_mode": "full", "check_scope": "row", """
+                    """ "hapinsp_checkcustom_cols": 999, "check_status": "active"}}, """
+                    """ "cust": {"rule_pk1": {"check_type": "rule", "check_name": "rule_uniqueness", """
+                    """ "check_mode": "full", "check_scope": "row", "hapinsp_checkcustom_cols": 999, """
+                    """ check_status: "active"}}}}} """)
+
+        with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
+            f.write(bad_data)
+        reg = mod.Registry()
+        with pytest.raises(SystemExit):
+            reg.load_registry(pjoin(self.temp_dir, 'registry.json'))
+
+
+    def test_loading_bad_registry_missing_brace(self):
+        # check_status at end of registry is unquoted
+        bad_data = ("""{"prod1": {"AssetEvent": {"asset": {"rule_pk1": {"check_type": "rule", """
+                    """ "check_name": "rule_uniqueness", "check_mode": "full", "check_scope": "row", """
+                    """ "hapinsp_checkcustom_cols": 999, "check_status": "active"}}, """
+                    """ "cust": {"rule_pk1": {"check_type": "rule", "check_name": "rule_uniqueness", """
+                    """ "check_mode": "full", "check_scope": "row", "hapinsp_checkcustom_cols": 999, """
+                    """ "check_status": "active"}}}} """)
+
+        with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
+            f.write(bad_data)
+        reg = mod.Registry()
+        with pytest.raises(SystemExit):
+            reg.load_registry(pjoin(self.temp_dir, 'registry.json'))
 
     def test_creating_then_writing(self):
         reg = mod.Registry()
@@ -274,7 +356,7 @@ class TestCheckResults(object):
         self.add_2_checks_to_1_table('customer', violations=3)
         self.check_results.write_to_sqlite()
         assert isfile(pjoin(self.temp_dir, 'results.sqlite'))
-        shutil.copy(pjoin(self.temp_dir, 'results.sqlite'), pjoin('/tmp', 'results.sqlite'))
+        #shutil.copy(pjoin(self.temp_dir, 'results.sqlite'), pjoin('/tmp/foo', 'results.sqlite'))
 
         conn = sqlite3.connect(pjoin(self.temp_dir, 'results.sqlite'))
         cur  = conn.cursor()
