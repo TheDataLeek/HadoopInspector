@@ -30,7 +30,7 @@ setup(name             = 'hadoop-inspector',
       keywords         = "data quality management health",
       author           = 'Will Farmer, Ken Farmer'      ,
       author_email     = 'willzfarmer@gmail.com, kenfar@gmail.com',
-      url              = 'http://github.com/kenfar/hadoop-inspector',
+      url              = 'http://github.com/willzfarmer/hadoop-inspector',
       license          = 'BSD'             ,
       classifiers      = [
             'Development Status :: 4 - Beta'                         ,
@@ -48,8 +48,7 @@ setup(name             = 'hadoop-inspector',
       install_requires = REQUIREMENTS,
       packages         = find_packages(),
       include_package_data = True,
-      entry_points     = { 'console_scripts': [ 
-                           'hadoopinspector_server = hadoopinspector.scripts.hadoopinspector_server:run' ] },
+      entry_points     = { 'console_scripts': [ 'hadoopinspector_server = hadoopinspector.scripts.hadoopinspector_server:run' ] },
       package_data     = { 'static': 'HadoopInspector/server/static',
                            'templates': 'HadoopInspector/server/templates' }
                     

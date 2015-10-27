@@ -1,5 +1,7 @@
-0.1.3 - added logging - improved registry json validation & user error
-reporting - fixed: test teardowns leaving behind some files
+0.1.3 - added logging 
+      - improved registry json validation & user error reporting 
+      - fixed: test teardowns leaving behind some files
+      - fixed: tox errors
 
 0.1.2 - fixed check display issues
 

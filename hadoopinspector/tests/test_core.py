@@ -364,7 +364,7 @@ class TestCheckResults(object):
         cur.execute(sql)
         results = cur.fetchall()
         assert len(results)    == 2
-        assert len(results[0]) == 17
+        assert len(results[0]) == 19
         assert results[0][-2]  == 3   #check_violations_cnt
         assert results[1][-2]  == 3   #check_violations_cnt
 

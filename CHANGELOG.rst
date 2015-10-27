@@ -1,3 +1,7 @@
+0.1.3 - added logging - improved registry json validation & user error
+reporting - fixed: test teardowns leaving behind some files - fixed: got
+tox working
+
 0.1.2 - fixed check display issues
 
 0.1.1 - removed runtests - unnecessary test bundle for pytests

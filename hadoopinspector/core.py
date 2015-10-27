@@ -332,6 +332,8 @@ class CheckResults(object):
             check_severity_score=-1,
             run_start_timestamp=None,
             run_stop_timestamp=None,
+            data_start_timestamp=None,
+            data_stop_timestamp=None,
             setup_vars=None):
         assert isnumeric(rc)
         assert violations is None or isnumeric(violations), "Invalid violations: %s" % violations
@@ -363,6 +365,8 @@ class CheckResults(object):
         self.results[instance][database][table][check]['check_severity_score'] = check_severity_score
         self.results[instance][database][table][check]['run_start_timestamp']  = run_start_timestamp
         self.results[instance][database][table][check]['run_stop_timestamp']   = run_stop_timestamp
+        self.results[instance][database][table][check]['data_start_timestamp'] = data_start_timestamp
+        self.results[instance][database][table][check]['data_stop_timestamp']  = data_stop_timestamp
         self.results[instance][database][table][check]['setup_vars']           = '' if setup_vars is None else json.dumps(setup_vars)
 
     def get_max_rc(self):
@@ -433,23 +437,26 @@ class CheckResults(object):
             for db in self.results[inst]:
                 for table in self.results[inst][db]:
                     for check in self.results[inst][db][table]:
+                        check_fields = self.results[inst][db][table][check]
                         check_recs.append( (inst, db, table, check,
-                                self.results[inst][db][table][check]['check_type'],
-                                self.results[inst][db][table][check]['check_policy_type'],
-                                self.results[inst][db][table][check]['check_mode'],
-                                self.results[inst][db][table][check]['check_unit'],
-                                self.results[inst][db][table][check]['check_status'],
+                                check_fields['check_type'],
+                                check_fields['check_policy_type'],
+                                check_fields['check_mode'],
+                                check_fields['check_unit'],
+                                check_fields['check_status'],
                                 run_id,
-                                (self.results[inst][db][table][check]['run_start_timestamp'] or self.start_dt),
-                                (self.results[inst][db][table][check]['run_stop_timestamp']  or stop_dt),
-                                self.results[inst][db][table][check]['rc'],
-                                self.results[inst][db][table][check]['check_scope'],
-                                self.results[inst][db][table][check]['check_severity_score'],
-                                self.results[inst][db][table][check]['violation_cnt'],
-                                self.results[inst][db][table][check]['setup_vars'] ) )
+                                (check_fields['run_start_timestamp'] or self.start_dt),
+                                (check_fields['run_stop_timestamp']  or stop_dt),
+                                (check_fields['data_start_timestamp'] or check_fields['run_start_timestamp'] or self.start_dt),
+                                (check_fields['data_stop_timestamp']  or check_fields['run_stop_timestamp'] or stop_dt),
+                                check_fields['rc'],
+                                check_fields['check_scope'],
+                                check_fields['check_severity_score'],
+                                check_fields['violation_cnt'],
+                                check_fields['setup_vars'] ) )
 
         if check_recs:
-            check_sql  = """INSERT INTO check_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  """
+            check_sql  = """INSERT INTO check_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  """
             cur.executemany(check_sql, check_recs)
             conn.commit()
 
@@ -504,6 +511,8 @@ def create_sqlite_db(db_fqfn):
             run_id              INT,       \
             run_start_timestamp TIMESTAMP, \
             run_stop_timestamp  TIMESTAMP, \
+            data_start_timestamp TIMESTAMP, \
+            data_stop_timestamp  TIMESTAMP, \
             check_rc            INT,   \
             check_scope         INT,   \
             check_severity_score INT,  \
@@ -874,6 +883,8 @@ class SetupVars(object):
         self.tablecustom_vars = {}
         self.internal_rc      = -1
         self.table_status     = 'active'
+        self.data_start_timestamp = None
+        self.data_stop_timestamp   = None
         self._table_mode      = None
         self._parse_raw_output()
         self.check_logger     = check_logger
@@ -922,6 +933,10 @@ class SetupVars(object):
                     self.check_logger.info(val)
                 elif key == 'mode' and val:
                     self.table_mode = val
+                elif key == 'data_start_timestamp' and val:
+                    self.data_start_timestamp = val
+                elif key == 'data_stop_timestamp' and val:
+                    self.data_end_timestamp = val
             elif self._is_custom_var(key):
                 self.tablecustom_vars[key] = val
             else:
