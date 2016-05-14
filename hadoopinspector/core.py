@@ -322,8 +322,9 @@ class CheckResults(object):
             print(msg)
         sys.exit(1)
 
-    def add(self, instance, database, table, check, violations, rc,
-            check_status=None,
+    #def add(self, instance, database, table, check, violations, rc,
+    def add(self, instance, database, table, check, violations=-1, rc=-1,
+            check_status='active',
             check_type='rule',
             check_policy_type='quality',
             check_mode='full',
@@ -559,7 +560,6 @@ class CheckRunner(object):
 
 
     def both_logger(self, level, msg):
-        assert level in ('error', 'critical')
 
         if level == 'error':
             self.run_logger.error(msg)
@@ -567,6 +567,9 @@ class CheckRunner(object):
         elif level == 'critical':
             self.run_logger.critical(msg)
             self.check_logger.critical(msg)
+        else:
+            self.run_logger.error(msg)
+            self.check_logger.error(msg)
 
 
     def _get_logger(self, table, check):
@@ -675,7 +678,8 @@ class CheckRunner(object):
             for setup_check in sorted([ x for x in self.registry.db_registry[inst][db][table]
                                        if self.registry.db_registry[inst][db][table][x]['check_type'] == 'setup' ]):
                 reg_check = self.registry.db_registry[inst][db][table][setup_check]
-                self._run_setup_check(table, setup_check, reg_check)
+                if reg_check['check_status'] == 'active':
+                    self._run_setup_check(table, setup_check, reg_check)
 
             # bypass checks if setup marked this table inactive:
             if table_status == 'inactive':
@@ -699,7 +703,7 @@ class CheckRunner(object):
         # drop out if inactive:
         if reg_check['check_status'] == 'inactive':
             self.results.add(self.instance, self.database, table, setup_check,
-                             count=None, rc=None, check=reg_check['check_status'],
+                             check_status=reg_check['check_status'],
                              check_type='setup', setup_vars='')
             return
 
@@ -758,7 +762,7 @@ class CheckRunner(object):
 
         if reg_check['check_status'] == 'inactive':
             self.results.add(self.instance, self.database, table, check,
-                             count=None, rc=None, check_status='inactive')
+                             check_status='inactive')
             return
 
         # add envvars specific to this check from the registry
@@ -782,7 +786,7 @@ class CheckRunner(object):
             check_vars   = CheckVars(raw_output, self.check_logger)
             actual_mode  = check_vars.mode
         except ValueError as e:
-            count        = None
+            count        = -1
             int_rc       = None
             rc           = 202
             self.both_logger('ERROR', "Failed check: %s" % check)
@@ -913,9 +917,21 @@ class SetupVars(object):
             return False
 
     def _parse_raw_output(self):
+        if self.raw_output is None:
+            raise ValueError('setup output is None')
+        elif isinstance(self.raw_output, str) and self.raw_output.strip() == '':
+            raise ValueError('setup output is blank string')
+        elif isinstance(self.raw_output, dict) and len(self.raw_output.keys()) == 0:
+            return
+
         try:
             output_vars = json.loads(self.raw_output)
-        except (TypeError, ValueError):
+        except TypeError:
+            print("Error: invalid setup check results: %s" % self.raw_output)
+            if self.raw_output is None:
+                print("Error: setup check results raw_output is None")
+            raise
+        except ValueError:
             print("Error: invalid setup check results: %s" % self.raw_output)
             if self.raw_output is None:
                 print("Error: setup check results raw_output is None")

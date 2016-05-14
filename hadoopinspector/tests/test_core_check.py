@@ -85,7 +85,7 @@ class TestSetupVars(object):
         assert setup_vars.tablecustom_vars == kv
 
     def test_parse_setup_check_results__with_None_data(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
            setup_vars = mod.SetupVars(None, self.logger)
 
     def test_parse_setup_check_results__with_corrupt_struct(self):
