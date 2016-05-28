@@ -43,11 +43,17 @@ def main():
                                args.log_dir, args.log_level)
     checker.add_db_var('hapinsp_instance', args.instance)
     checker.add_db_var('hapinsp_database', args.database)
+    checker.add_db_var('hapinsp_ssl',      args.ssl)
     checker.run_checks_for_tables(args.table)
 
     if args.report:
+        print('')
+        print("===================== final report =======================")
         for rec in checker.results.get_formatted_results(args.detail_report):
-            print(rec)
+            fields = rec.split('|')
+            print('{tab:<30} {rule:<40} {mode:<12} {rc:<7} {cnt:<7}'.format(tab=fields[0], rule=fields[1],
+                         mode=(fields[2] or 'unk'), rc=(fields[3] or 'unk'), cnt=(fields[4] or 0) ) )
+        print('')
 
     runner_logger.info("runner terminating now with rc: %s", checker.results.get_max_rc())
     sys.exit(checker.results.get_max_rc())
@@ -89,6 +95,12 @@ def get_args():
     parser.add_argument('--log-dir',
                         required=True,
                         help='specifies directory to log output to')
+    parser.add_argument('--ssl',
+                        action='store_true',
+                        dest='ssl')
+    parser.add_argument('--no-ssl',
+                        action='store_false',
+                        dest='ssl')
     parser.add_argument('--console-log',
                         action='store_true',
                         dest='log_to_console')
@@ -112,6 +124,8 @@ def get_args():
         sys.exit(1)
     if args.detail_report:
         args.report = True
+    if args.ssl is None:
+        args.ssl = False
 
     return args
 

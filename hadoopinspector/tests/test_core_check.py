@@ -35,7 +35,8 @@ class TestSetupVars(object):
         self.log_dir       = tempfile.mkdtemp(prefix='hapinsp_run_logs_')
         self.check_runner  = mod.CheckRunner(self.registry, self.check_repo,
                               self.check_results, instance='foo', database='bar', run_log_dir=self.log_dir)
-        self.logger        = self._get_logger(table='tab1', check='ck1')
+        self._get_logger(table='tab1', check='ck1')
+        self.logger.debug('setup complete')
 
     def _get_logger(self, table, check):
 

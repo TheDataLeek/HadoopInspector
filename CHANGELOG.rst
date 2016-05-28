@@ -1,3 +1,5 @@
+0.1.4 - add minor fixes being used in prod
+
 0.1.3 - add logging - improve registry json validation & user error
 reporting - fix test teardowns leaving behind some files - fix tox
 errors - fix misc minor defects

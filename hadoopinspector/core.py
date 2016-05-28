@@ -100,7 +100,6 @@ class Registry(object):
 
         # just in case provided instance & db aren't in loaded full_registry:
         if instance not in self.full_registry or db not in self.full_registry[instance]:
-            #pp(self.full_registry)
             self.logger.critical("No registry found for instance (%s) & db (%s)", instance, db)
             raise EOFError("No registry found for instance (%s) & db (%s)" % (instance, db) )
 
@@ -354,6 +353,8 @@ class CheckResults(object):
             self.results[instance][database][table] = {}
         if check not in self.results[instance][database][table]:
             self.results[instance][database][table][check] = {}
+        #if check_type == 'setup':
+        #    violations = ''
 
         self.results[instance][database][table][check]['violation_cnt']        = violations
         self.results[instance][database][table][check]['rc']                   = int(rc)
@@ -548,7 +549,7 @@ class CheckRunner(object):
         self.run_log_dir = run_log_dir
         self.log_level = log_level
         self.check_file_handler = None
-        self.check_logger = None
+        self.check_logger = logging.getLogger('CheckLogger')
         self.run_logger = logging.getLogger('RunnerLogger')
 
     def _abort(self, msg):
@@ -702,6 +703,7 @@ class CheckRunner(object):
 
         # drop out if inactive:
         if reg_check['check_status'] == 'inactive':
+            #kenpatch: count is failing, was changed to violations
             self.results.add(self.instance, self.database, table, setup_check,
                              check_status=reg_check['check_status'],
                              check_type='setup', setup_vars='')
@@ -890,8 +892,8 @@ class SetupVars(object):
         self.data_start_timestamp = None
         self.data_stop_timestamp   = None
         self._table_mode      = None
-        self._parse_raw_output()
         self.check_logger     = check_logger
+        self._parse_raw_output()
 
     @property
     def table_mode(self):
@@ -917,6 +919,7 @@ class SetupVars(object):
             return False
 
     def _parse_raw_output(self):
+        self.check_logger.debug('point b')
         if self.raw_output is None:
             raise ValueError('setup output is None')
         elif isinstance(self.raw_output, str) and self.raw_output.strip() == '':
@@ -926,15 +929,10 @@ class SetupVars(object):
 
         try:
             output_vars = json.loads(self.raw_output)
-        except TypeError:
-            print("Error: invalid setup check results: %s" % self.raw_output)
+        except (TypeError, ValueError):
+            self.check_logger.critical("Error: invalid setup check results: %s" % self.raw_output)
             if self.raw_output is None:
-                print("Error: setup check results raw_output is None")
-            raise
-        except ValueError:
-            print("Error: invalid setup check results: %s" % self.raw_output)
-            if self.raw_output is None:
-                print("Error: setup check results raw_output is None")
+                self.check_logger.critical("Error: setup check results raw_output is None")
             raise
 
         internal_rc = None
@@ -952,13 +950,11 @@ class SetupVars(object):
                 elif key == 'data_start_timestamp' and val:
                     self.data_start_timestamp = val
                 elif key == 'data_stop_timestamp' and val:
-                    self.data_end_timestamp = val
+                    self.data_stop_timestamp = val
             elif self._is_custom_var(key):
                 self.tablecustom_vars[key] = val
             else:
                 raise ValueError("Invalid setup_check result - key has bad name: %s" % key)
-
-
 
 
 
@@ -980,6 +976,7 @@ def abort(msg=""):
     print(msg)
     sys.exit(1)
 
+
 def isnumeric(val):
     try:
         int(val)
@@ -989,12 +986,5 @@ def isnumeric(val):
         return False
     else:
         return True
-
-
-def printerr(*args):
-    sys.stderr.write(' '.join(map(str,args)) + '\n')
-
-
-
 
 

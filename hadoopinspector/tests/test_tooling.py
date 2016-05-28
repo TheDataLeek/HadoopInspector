@@ -139,7 +139,7 @@ def report_checker(report, expected_check_cnt, expected_check_rc, expected_viola
     assert len(report)   == expected_check_cnt
     for rec in report:
         if rec.check.startswith('setup'):
-            assert rec.violation_cnt == ''
+            assert rec.violation_cnt == '0'
         else:
             assert rec.check_rc      == str(expected_check_rc)
             assert rec.violation_cnt == str(expected_violation_cnt)
@@ -149,7 +149,7 @@ def report_rec_parser(rec):
     if not rec:
         raise EmptyRecError
 
-    fields = rec.split('|')
+    fields = rec.split()
     if len(fields) != 5:
         raise ValueError("Not a report rec: %s" % rec)
     else:
