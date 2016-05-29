@@ -39,7 +39,7 @@ def add_to_registry(registry_fn, inst, db, table, check_dir, check_fn,
    reg = core.Registry()
    if registry_fn and isfile(registry_fn):
        reg.load_registry(registry_fn)
-   reg.add_check(inst, db, table, check_alias, basename(check_fn),
+   reg.add_check(table, check_alias, basename(check_fn),
                  check_status, check_type, check_mode, check_scope,
                  **checkvars)
    registry_fn = reg.write(registry_fn)

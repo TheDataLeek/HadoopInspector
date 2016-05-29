@@ -23,18 +23,14 @@ class Registry(object):
     """ Sample Config File, with just a single check for a single table
     for a single db for a single instance:
     {
-        "prod1": {                      # instance-name
-            "AssetEvent": {             # db-name
-                "asset": {              # table-name
-                    "rule_pk1": {       # check-name
-                        "check_type":   "rule",
-                        "check_name":   "rule_uniqueness",
-                        "check_mode":   "full",
-                        "check_scope":  "row",
-                        "check_status": "active"
-                        "hapinsp_checkcustom_cols": date_id
-                    }
-                }
+        "asset": {              # table-name
+            "rule_pk1": {       # check-name
+                "check_type":   "rule",
+                "check_name":   "rule_uniqueness",
+                "check_mode":   "full",
+                "check_scope":  "row",
+                "check_status": "active"
+                "hapinsp_checkcustom_cols": date_id
             }
         }
     }
@@ -81,89 +77,47 @@ class Registry(object):
                         self.logger.critical(err)
                     self._abort("Invalid registry file - json errors discovered during load")
 
-    def generate_db_registry(self, instance, db, table=None, check=None):
+    def generate_db_registry(self, table=None, check=None):
         """ Generate the db registry from the full registry.  Optionally, only
         include specified table and/or check
 
-        :param instance - str
-        :param db       - str
         :param table    - str, optional
         :param check    - str, optional
         """
-
-        assert instance is not None
-        assert db is not None
-
         if not self.full_registry:
             self.logger.critical('invalid registry file - it is empty')
             raise EOFError("Registry is empty")
 
-        # just in case provided instance & db aren't in loaded full_registry:
-        if instance not in self.full_registry or db not in self.full_registry[instance]:
-            self.logger.critical("No registry found for instance (%s) & db (%s)", instance, db)
-            raise EOFError("No registry found for instance (%s) & db (%s)" % (instance, db) )
-
-        for full_table in self.full_registry[instance][db]:
+        for full_table in self.full_registry:
             if table is None or (table == full_table):
-                for full_check in self.full_registry[instance][db][full_table]:
+                for full_check in self.full_registry[full_table]:
                     if check is None or (check == full_check):
-                        ck = self.full_registry[instance][db][full_table][full_check]
-                        self.add_check(instance, db, full_table, full_check, registry=self.db_registry, **ck)
+                        ck = self.full_registry[full_table][full_check]
+                        self.add_check_to_db_reg(full_table, full_check, **ck)
 
-        if len(self.db_registry.keys()) == 0:
-            self.logger.critical("No registry found for instance (%s) & db (%s)", instance, db)
-            raise EOFError("No registry found for instance & db")
-
-
-    def get_instance(self, instance, registry=None):
+    def list_tables(self, registry=None):
         if registry is None:
             registry = self.full_registry
-        return registry[instance]
+        return registry.keys()
 
-    def add_instance(self, instance, registry=None):
+    def add_table(self, table):
+        self.full_registry[table] = {}
+
+    def list_checks(self, table, registry=None):
         if registry is None:
             registry = self.full_registry
-        registry[instance] = {}
+        return registry[table].keys()
 
-    def add_db(self, instance, db, registry=None):
-        if registry is None:
-            registry = self.full_registry
-        registry[instance][db] = {}
-
-    def list_tables(self, instance, db, registry=None):
-        if registry is None:
-            registry = self.full_registry
-        return registry[instance][db].keys()
-
-    def add_table(self, instance, db, table, registry=None):
-        if registry is None:
-            registry = self.full_registry
-        registry[instance][db][table] = {}
-
-    def list_checks(self, instance, db, table, registry=None):
-        if registry is None:
-            registry = self.full_registry
-        return registry[instance][db][table].keys()
-
-    def add_check(self, instance, db, table, check, check_name, check_status, check_type,
-                  check_mode, check_scope, registry=None, **checkvars):
+    def add_check(self, table, check, check_name, check_status, check_type,
+                  check_mode, check_scope, **checkvars):
         """ Add a check structure to registry.  If no registry is provided,
             then it'll add this to the full_registry.
         """
-        if registry is None:
-            registry = self.full_registry
-        assert isinstance(registry, dict)
-
-        #--- add hierarchy parents:
-        if instance not in registry:
-            registry[instance] = {}
-        if db not in registry[instance]:
-            registry[instance][db] = {}
-        if table not in registry[instance][db]:
-            registry[instance][db][table] = {}
+        if table not in self.full_registry:
+            self.add_table(table)
 
         #--- finally, add check:
-        registry[instance][db][table][check] = {
+        self.full_registry[table][check] = {
                'check_name':    check_name,
                'check_status':  check_status,
                'check_type':    check_type,
@@ -173,7 +127,31 @@ class Registry(object):
             if not key.startswith('hapinsp_checkcustom_'):
                 self.logger.critical("Invalid registry check (%s) - invalid checkvar (%s)", check, key)
                 self._abort("Invalid registry checkvar: %s" % key)
-            registry[instance][db][table][check][key] = checkvars[key]
+            self.full_registry[table][check][key] = checkvars[key]
+
+    def add_check_to_db_reg(self, table, check, check_name, check_status, check_type,
+                  check_mode, check_scope, **checkvars):
+        """ Add a check structure to registry.  If no registry is provided,
+            then it'll add this to the full_registry.
+        """
+        if table not in self.full_registry:
+            raise ValueError('Table not in registry: %s', table)
+        if table not in self.db_registry:
+            self.db_registry[table] = {}
+
+        #--- finally, add check:
+        self.db_registry[table][check] = {
+               'check_name':    check_name,
+               'check_status':  check_status,
+               'check_type':    check_type,
+               'check_mode':    check_mode,
+               'check_scope':   check_scope }
+        for key in checkvars:
+            if not key.startswith('hapinsp_checkcustom_'):
+                self.logger.critical("Invalid registry check (%s) - invalid checkvar (%s)", check, key)
+                self._abort("Invalid registry checkvar: %s" % key)
+            self.db_registry[table][check][key] = checkvars[key]
+
 
 
     def write(self, filename=None, registry=None):
@@ -189,6 +167,7 @@ class Registry(object):
     def validate_file(self, filename):
 
         if not isfile(filename):
+            print('validate_file - b')
             return ValueError, 'Invalid file: %s' % filename
 
         try:
@@ -263,21 +242,15 @@ class Registry(object):
 
         if not isinstance(registry, dict):
             self._abort(msg="Invalid registry")
-        for instance in registry:
-            if not isinstance(registry[instance], dict):
-                self._abort(msg="Invalid registry instance: %s" % instance)
-            for db in registry[instance]:
-                if not isinstance(registry[instance][db], dict):
-                    self._abort(msg="Invalid registry db: %s.%s" % (instance, db))
-                for table in registry[instance][db]:
-                    if not isinstance(registry[instance][db][table], dict):
-                        self._abort(msg="Invalid registry table: %s.%s.%s" % (instance, db, table))
-                    for check in registry[instance][db][table]:
-                        check_type = registry[instance][db][table][check].get('check_type', None)
-                        if check_type is None:
-                            self._abort(msg="Missing check_type for: %s.%s.%s" % (instance, db, table ))
-                        else:
-                            validate_check(registry[instance][db][table][check], check_type)
+        for table in registry:
+            if not isinstance(registry[table], dict):
+                self._abort(msg="Invalid registry table: %s" % table)
+            for check in registry[table]:
+                check_type = registry[table][check].get('check_type', None)
+                if check_type is None:
+                    self._abort(msg="Missing check_type for: %s" % table )
+                else:
+                    validate_check(registry[table][check], check_type)
 
 
 
@@ -670,15 +643,15 @@ class CheckRunner(object):
         """
         inst = self.instance
         db   = self.database
-        for table in self.registry.db_registry[inst][db]:
+        for table in self.registry.db_registry:
 
             self.add_table_var('hapinsp_table', table)
             table_status = 'active'
 
             #------  setup checks must happen first.   -----------------------------
-            for setup_check in sorted([ x for x in self.registry.db_registry[inst][db][table]
-                                       if self.registry.db_registry[inst][db][table][x]['check_type'] == 'setup' ]):
-                reg_check = self.registry.db_registry[inst][db][table][setup_check]
+            for setup_check in sorted([ x for x in self.registry.db_registry[table]
+                                       if self.registry.db_registry[table][x]['check_type'] == 'setup' ]):
+                reg_check = self.registry.db_registry[table][setup_check]
                 if reg_check['check_status'] == 'active':
                     self._run_setup_check(table, setup_check, reg_check)
 
@@ -688,10 +661,10 @@ class CheckRunner(object):
 
             # regular checks (could be either rules or prfiles)
             #------  regular checks (rules or profiles) can now run  -----------------------------
-            for check in sorted([ x for x in self.registry.db_registry[inst][db][table]
-                                  if self.registry.db_registry[inst][db][table][x]['check_type']
+            for check in sorted([ x for x in self.registry.db_registry[table]
+                                  if self.registry.db_registry[table][x]['check_type']
                                      not in ('setup', 'teardown') ]):
-                reg_check = self.registry.db_registry[inst][db][table][check]
+                reg_check = self.registry.db_registry[table][check]
                 self._run_check(table, check, reg_check)
 
             self.drop_table_vars()

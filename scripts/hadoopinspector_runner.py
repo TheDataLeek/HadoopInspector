@@ -34,7 +34,7 @@ def main():
 
     registry = core.Registry()
     registry.load_registry(args.registry_filename)
-    registry.generate_db_registry(args.instance, args.database, args.table, args.check)
+    registry.generate_db_registry(args.table, args.check)
 
     check_repo = core.CheckRepo(args.check_dir)
     check_results = core.CheckResults(db_fqfn=args.results_filename)

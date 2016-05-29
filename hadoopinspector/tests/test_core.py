@@ -45,30 +45,26 @@ class TestRegistry(object):
         shutil.rmtree(self.temp_dir)
 
     def test_loading_good_registry(self):
-        good_data =    { "prod1": {
-                            "AssetEvent": {
-                                "asset": {
-                                    "rule_pk1": {
-                                        "check_type":   "rule",
-                                        "check_name":   "rule_uniqueness",
-                                        "check_mode":   "full",
-                                        "check_scope":  "row",
-                                        "check_status": "active",
-                                        "hapinsp_checkcustom_cols": 999
-                                    }
-                                },
-                                "cust": {
-                                    "rule_pk1": {
-                                        "check_type":   "rule",
-                                        "check_name":   "rule_uniqueness",
-                                        "check_mode":   "full",
-                                        "check_scope":  "row",
-                                        "check_status": "active",
-                                        "hapinsp_checkcustom_cols": 999
-                                    }
-                                }
-                            }
-                         }
+        good_data =    { "asset": {
+				"rule_pk1": {
+				"check_type":   "rule",
+				"check_name":   "rule_uniqueness",
+				"check_mode":   "full",
+				"check_scope":  "row",
+				"check_status": "active",
+				"hapinsp_checkcustom_cols": 999
+				}
+			},
+			"cust": {
+				"rule_pk1": {
+				"check_type":   "rule",
+				"check_name":   "rule_uniqueness",
+				"check_mode":   "full",
+				"check_scope":  "row",
+				"check_status": "active",
+				"hapinsp_checkcustom_cols": 999
+				}
+			}
                       }
         with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
             json.dump(good_data, f)
@@ -78,12 +74,12 @@ class TestRegistry(object):
 
     def test_loading_bad_registry_extra_comma(self):
         # extra comma before last field in registry
-        bad_data = ("""{"prod1": {"AssetEvent": {"asset": {"rule_pk1": {"check_type": "rule", """
+        bad_data = ("""{"asset": {"rule_pk1": {"check_type": "rule", """
                     """ "check_name": "rule_uniqueness", "check_mode": "full", "check_scope": "row", """
                     """ "hapinsp_checkcustom_cols": 999, "check_status": "active"}}, """
                     """ "cust": {"rule_pk1": {"check_type": "rule", "check_name": "rule_uniqueness", """
                     """ "check_mode": "full", "check_scope": "row", "hapinsp_checkcustom_cols": 999,, """
-                    """ "check_status": "active"}}}}} """)
+                    """ "check_status": "active"}}} """)
 
         with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
             f.write(bad_data)
@@ -94,12 +90,12 @@ class TestRegistry(object):
 
     def test_loading_bad_registry_unquoted_key(self):
         # check_status at end of registry is unquoted
-        bad_data = ("""{"prod1": {"AssetEvent": {"asset": {"rule_pk1": {"check_type": "rule", """
+        bad_data = ("""{"asset": {"rule_pk1": {"check_type": "rule", """
                     """ "check_name": "rule_uniqueness", "check_mode": "full", "check_scope": "row", """
                     """ "hapinsp_checkcustom_cols": 999, "check_status": "active"}}, """
                     """ "cust": {"rule_pk1": {"check_type": "rule", "check_name": "rule_uniqueness", """
                     """ "check_mode": "full", "check_scope": "row", "hapinsp_checkcustom_cols": 999, """
-                    """ check_status: "active"}}}}} """)
+                    """ check_status: "active"}}} """)
 
         with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
             f.write(bad_data)
@@ -110,12 +106,12 @@ class TestRegistry(object):
 
     def test_loading_bad_registry_missing_brace(self):
         # check_status at end of registry is unquoted
-        bad_data = ("""{"prod1": {"AssetEvent": {"asset": {"rule_pk1": {"check_type": "rule", """
+        bad_data = ("""{"asset": {"rule_pk1": {"check_type": "rule", """
                     """ "check_name": "rule_uniqueness", "check_mode": "full", "check_scope": "row", """
                     """ "hapinsp_checkcustom_cols": 999, "check_status": "active"}}, """
                     """ "cust": {"rule_pk1": {"check_type": "rule", "check_name": "rule_uniqueness", """
                     """ "check_mode": "full", "check_scope": "row", "hapinsp_checkcustom_cols": 999, """
-                    """ "check_status": "active"}}}} """)
+                    """ "check_status": "active"}} """)
 
         with open(pjoin(self.temp_dir, 'registry.json'), 'w') as f:
             f.write(bad_data)
@@ -125,10 +121,8 @@ class TestRegistry(object):
 
     def test_creating_then_writing(self):
         reg = mod.Registry()
-        reg.add_instance('prod1')
-        reg.add_db('prod1', 'AssetEvent')
-        reg.add_table('prod1', 'AssetEvent', 'asset')
-        reg.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg.add_table('asset')
+        reg.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
@@ -141,10 +135,8 @@ class TestRegistry(object):
 
     def test_creating_then_loading(self):
         reg1 = mod.Registry()
-        reg1.add_instance('prod1')
-        reg1.add_db('prod1', 'AssetEvent')
-        reg1.add_table('prod1', 'AssetEvent', 'asset')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
@@ -160,10 +152,8 @@ class TestRegistry(object):
 
     def test_validating_bad_check(self):
         reg1 = mod.Registry()
-        reg1.add_instance('prod1')
-        reg1.add_db('prod1', 'AssetEvent')
-        reg1.add_table('prod1', 'AssetEvent', 'asset')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
@@ -175,10 +165,8 @@ class TestRegistry(object):
 
     def test_validating_bad_setup(self):
         reg1 = mod.Registry()
-        reg1.add_instance('prod1')
-        reg1.add_db('prod1', 'AssetEvent')
-        reg1.add_table('prod1', 'AssetEvent', 'asset')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='setup',
@@ -190,24 +178,22 @@ class TestRegistry(object):
 
     def test_creating_then_loading_with_setup_and_teardown(self):
         reg1 = mod.Registry()
-        reg1.add_instance('prod1')
-        reg1.add_db('prod1', 'AssetEvent')
-        reg1.add_table('prod1', 'AssetEvent', 'asset')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'asset_setup',
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'asset_setup',
                check_name='asset_setup',
                check_status='active',
                check_type='setup',
                check_mode=None,
                check_scope=None)
 
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
                check_mode='full',
                check_scope='row')
 
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'teardown',
+        reg1.add_check('asset', 'teardown',
                check_name='asset_teardown',
                check_status='active',
                check_type='setup',
@@ -224,30 +210,28 @@ class TestRegistry(object):
 
     def test_generating_db_registry(self):
         reg1 = mod.Registry()
-        reg1.add_instance('prod1')
-        reg1.add_db('prod1', 'AssetEvent')
-        reg1.add_table('prod1', 'AssetEvent', 'asset')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'asset_setup',
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'asset_setup',
                check_name='asset_setup',
                check_status='active',
                check_type='setup',
                check_mode=None,
                check_scope=None)
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='rule',
                check_mode='full',
                check_scope='row')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'teardown',
+        reg1.add_check('asset', 'teardown',
                check_name='asset_teardown',
                check_status='active',
                check_type='setup',
                check_mode=None,
                check_scope=None)
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
-        reg1.generate_db_registry('prod1', 'AssetEvent')
-        assert 'check_name' in reg1.db_registry['prod1']['AssetEvent']['asset']['rule_pk1']
+        reg1.generate_db_registry()
+        assert 'check_name' in reg1.db_registry['asset']['rule_pk1']
 
     def test_validation(self):
         reg1 = mod.Registry()
@@ -259,10 +243,8 @@ class TestRegistry(object):
 
     def test_validating_checkvars(self):
         reg1 = mod.Registry()
-        reg1.add_instance('prod1')
-        reg1.add_db('prod1', 'AssetEvent')
-        reg1.add_table('prod1', 'AssetEvent', 'asset')
-        reg1.add_check('prod1', 'AssetEvent', 'asset', 'rule_pk1',
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'rule_pk1',
                check_name='rule_uniqueness',
                check_status='active',
                check_type='setup',
