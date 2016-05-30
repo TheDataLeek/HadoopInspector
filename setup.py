@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
 import uuid
@@ -51,5 +51,4 @@ setup(name             = 'hadoop-inspector',
       entry_points     = { 'console_scripts': [ 'hadoopinspector_server = hadoopinspector.scripts.hadoopinspector_server:run' ] },
       package_data     = { 'static': 'HadoopInspector/server/static',
                            'templates': 'HadoopInspector/server/templates' }
-                    
      )

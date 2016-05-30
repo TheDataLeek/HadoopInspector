@@ -1,4 +1,8 @@
-0.1.4 - add minor fixes being used in prod
+0.1.4 - remove inst & db from registry json files
+      - add minor fixes being used in prod
+      - add --ssl option to runner 
+      - add --version option to runner
+      - heavy refactoring & housekeeping
 
 0.1.3 - add logging 
       - improve registry json validation & user error reporting 

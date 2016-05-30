@@ -7,7 +7,7 @@ Copyright 2015 Will Farmer and Ken Farmer
 """
 
 from __future__ import division
-import sys, os, shutil, stat, time, glob
+import sys, os, shutil, time, glob
 import tempfile, subprocess, collections, fileinput
 from pprint import pprint as pp
 
@@ -21,7 +21,6 @@ pgm         = os.path.join(script_path, 'hadoopinspector_runner.py')
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import hadoopinspector.core as core
-#import hadoopinspector.tests.test_core_check_runner_functional   as testtooling
 import hadoopinspector.tests.test_tooling   as testtooling
 
 Record = collections.namedtuple('Record', 'instance db table check check_rc violation_cnt')
@@ -218,17 +217,9 @@ class TestWithMockedCheckFiles(object):
 
 
 
-
-
-
 class EmptyRecError(Exception):
     def __init__(self, value=None):
         self.value = value
     def __str__(self):
         return repr(self.value)
-
-
-
-
-
 

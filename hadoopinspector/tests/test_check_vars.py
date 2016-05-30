@@ -3,14 +3,11 @@
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2015 Will Farmer and Ken Farmer
+Copyright 2015, 2016 Will Farmer and Ken Farmer
 """
-
 from __future__ import division
-import sys, os, shutil, stat
-import tempfile, json
-import subprocess
-import collections
+import sys, os, shutil, errno
+import tempfile
 import logging
 import logging.handlers
 from pprint import pprint as pp
@@ -21,7 +18,7 @@ from os.path import join as pjoin
 from os.path import dirname
 
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
-import core as mod
+import check_runner as mod
 
 
 class TestSetupVars(object):
@@ -87,17 +84,16 @@ class TestSetupVars(object):
 
     def test_parse_setup_check_results__with_None_data(self):
         with pytest.raises(ValueError):
-           setup_vars = mod.SetupVars(None, self.logger)
+            mod.SetupVars(None, self.logger)
 
     def test_parse_setup_check_results__with_corrupt_struct(self):
-        raw_output = """{"""
         with pytest.raises(ValueError):
-           setup_vars = mod.SetupVars("""{""", self.logger)
+            mod.SetupVars("""{""", self.logger)
 
     def test_parse_setup_check_results__with_bad_key(self):
         raw_output = """{"hapinsp_tableblah_foo": 2015 } """
         with pytest.raises(ValueError):
-            setup_vars = mod.SetupVars(raw_output, self.logger)
+            mod.SetupVars(raw_output, self.logger)
 
 
 
