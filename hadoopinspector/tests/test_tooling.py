@@ -3,13 +3,10 @@
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2015 Will Farmer and Ken Farmer
+Copyright 2015, 2016 Will Farmer and Ken Farmer
 """
-
 from __future__ import division
-import sys, os, shutil, stat, time
-import tempfile
-import subprocess
+import sys, os, stat
 import collections
 import sqlite3
 from pprint import pprint as pp
@@ -19,11 +16,10 @@ from os.path import join as pjoin
 from os.path import dirname
 
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-pgm         = os.path.join(script_path, 'hadoopinspector_runner.py')
-
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import core as core
+import registry as registry
 
 Record = collections.namedtuple('Record', 'table check check_rc violation_cnt')
 
@@ -32,19 +28,19 @@ Record = collections.namedtuple('Record', 'table check check_rc violation_cnt')
 def add_to_registry(registry_fn, inst, db, table, check_dir, check_fn,
                     check_type='rule', **checkvars):
 
-   check_alias  = os.path.splitext(basename(check_fn))[0]
-   check_status = 'active'
-   check_mode   = 'full'
-   check_scope  = 'row'
-   reg = core.Registry()
-   if registry_fn and isfile(registry_fn):
-       reg.load_registry(registry_fn)
-   reg.add_check(inst, db, table, check_alias, basename(check_fn),
+    check_alias  = os.path.splitext(basename(check_fn))[0]
+    check_status = 'active'
+    check_mode   = 'full'
+    check_scope  = 'row'
+    reg = registry.Registry()
+    if registry_fn and isfile(registry_fn):
+        reg.load_registry(registry_fn)
+    reg.add_check(table, check_alias, basename(check_fn),
                  check_status, check_type, check_mode, check_scope,
                  **checkvars)
-   registry_fn = reg.write(registry_fn)
-   assert isfile(registry_fn)
-   return registry_fn
+    registry_fn = reg.write(registry_fn)
+    assert isfile(registry_fn)
+    return registry_fn
 
 
 def add_check(check_dir, table, rc, out_count=0, formatter_fqfn=None):
@@ -70,9 +66,9 @@ def add_env_check(check_dir, table, key, value, formatter_fqfn=None):
         Return: fqfn of check
     """
     for check_id in range(1000):
-       fqfn = pjoin(check_dir, 'check_%s_%d.bash' % (table, check_id))
-       if not isfile(fqfn):
-           break
+        fqfn = pjoin(check_dir, 'check_%s_%d.bash' % (table, check_id))
+        if not isfile(fqfn):
+            break
     if formatter_fqfn is None:
         formatter_fqfn = pjoin(script_path, 'hapinsp_formatter.py')
     with open(fqfn, 'w') as f:
@@ -135,11 +131,10 @@ def report_checker(report, expected_check_cnt, expected_check_rc, expected_viola
     From the above is also derrived:
         - expected_tot_violation_cnt - which is the expected_check_cnt * expected_violation_cnt
     """
-    expected_tot_violation_cnt = int(expected_check_cnt) * int(expected_violation_cnt)
     assert len(report)   == expected_check_cnt
     for rec in report:
         if rec.check.startswith('setup'):
-            assert rec.violation_cnt == ''
+            assert rec.violation_cnt == '0'
         else:
             assert rec.check_rc      == str(expected_check_rc)
             assert rec.violation_cnt == str(expected_violation_cnt)
@@ -149,7 +144,7 @@ def report_rec_parser(rec):
     if not rec:
         raise EmptyRecError
 
-    fields = rec.split('|')
+    fields = rec.split()
     if len(fields) != 5:
         raise ValueError("Not a report rec: %s" % rec)
     else:
@@ -197,7 +192,7 @@ def print_check_results(results_fqfn):
 
 def print_file(filename):
     with open(filename, 'r') as f:
-         print(f.read())
+        print(f.read())
 
 
 

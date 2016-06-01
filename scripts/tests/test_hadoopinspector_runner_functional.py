@@ -7,10 +7,8 @@ Copyright 2015 Will Farmer and Ken Farmer
 """
 
 from __future__ import division
-import sys, os, shutil, stat, time
-import tempfile
-import subprocess
-import collections
+import sys, os, shutil, time, glob
+import tempfile, subprocess, collections, fileinput
 from pprint import pprint as pp
 
 from os.path import exists, isdir, isfile, basename, dirname
@@ -23,7 +21,6 @@ pgm         = os.path.join(script_path, 'hadoopinspector_runner.py')
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import hadoopinspector.core as core
-#import hadoopinspector.tests.test_core_check_runner_functional   as testtooling
 import hadoopinspector.tests.test_tooling   as testtooling
 
 Record = collections.namedtuple('Record', 'instance db table check check_rc violation_cnt')
@@ -50,6 +47,7 @@ class TestWithMockedCheckFiles(object):
         assert isfile(self.registry_fqfn)
         assert isdir(self.check_dir)
         assert isdir(self.log_dir)
+        assert isfile(pgm)
         if self.results_fqfn is None:
             self.results_fqfn = pjoin(self.misc_dir, 'results.sqlite')
 
@@ -72,16 +70,18 @@ class TestWithMockedCheckFiles(object):
         print("run_cmd report: ")
         for line in results.split('\n'):
             print(line)
-            try:
-                rec = testtooling.report_rec_parser(line)
-                report.append(rec)
-            except testtooling.EmptyRecError:
+            if '=========' in line:
                 continue
-            except ValueError:
-                pass
-                #print('report_rec_parser - could not parse output rec:')
-                print(line)
-                #raise
+            else:
+                try:
+                    rec = testtooling.report_rec_parser(line)
+                    report.append(rec)
+                except testtooling.EmptyRecError:
+                    continue
+                except ValueError:
+                    print('report_rec_parser - could not parse output rec with %d characters: ' % len(line))
+                    print(line)
+                    #raise
         return report, run_rc
 
     def _add_setup_check(self, table, key=None, value=None,
@@ -125,6 +125,13 @@ class TestWithMockedCheckFiles(object):
                                              check_type)
 
 
+    def _print_logs(self):
+        for fqfn in glob.glob(pjoin(self.log_dir, '*')):
+            if isdir(fqfn):
+                print('log_dir: %s' % fqfn)
+            else:
+                for rec in fileinput.input(fqfn):
+                    print('    %s' % rec)
 
     def test_one_successful_check_with_no_violations(self):
         table                  = 'customer'
@@ -138,6 +145,7 @@ class TestWithMockedCheckFiles(object):
         pp(report)
         testtooling.report_checker(report, expected_check_cnt, expected_check_rc, expected_violation_cnt)
         assert str(run_rc) == expected_run_rc
+        self._print_logs()
 
 
     def test_one_successful_checks_with_violations(self):
@@ -209,17 +217,9 @@ class TestWithMockedCheckFiles(object):
 
 
 
-
-
-
 class EmptyRecError(Exception):
     def __init__(self, value=None):
         self.value = value
     def __str__(self):
         return repr(self.value)
-
-
-
-
-
 

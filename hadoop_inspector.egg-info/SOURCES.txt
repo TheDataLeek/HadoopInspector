@@ -1,9 +1,0 @@
-README.rst
-setup.py
-hadoop_inspector.egg-info/PKG-INFO
-hadoop_inspector.egg-info/SOURCES.txt
-hadoop_inspector.egg-info/dependency_links.txt
-hadoop_inspector.egg-info/top_level.txt
-hadoopinspector/__init__.py
-hadoopinspector/_version.py
-scripts/hadoopinspector_demogen.py
