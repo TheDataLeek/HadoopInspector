@@ -35,9 +35,14 @@ def add_to_registry(registry_fn, inst, db, table, check_dir, check_fn,
     reg = registry.Registry()
     if registry_fn and isfile(registry_fn):
         reg.load_registry(registry_fn)
-    reg.add_check(table, check_alias, basename(check_fn),
-                 check_status, check_type, check_mode, check_scope,
-                 **checkvars)
+    if check_type == 'rule':
+        reg.add_check(table, check_alias, basename(check_fn),
+                    check_status, check_type, check_mode, check_scope,
+                    **checkvars)
+    else:
+        reg.add_setup_check(table, check_alias, basename(check_fn),
+                    check_status, check_type, check_mode,
+                    **checkvars)
     registry_fn = reg.write(registry_fn)
     assert isfile(registry_fn)
     return registry_fn

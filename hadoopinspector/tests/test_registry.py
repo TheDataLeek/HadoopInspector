@@ -58,7 +58,8 @@ class TestRegistry(object):
             json.dump(good_data, f)
         reg = mod.Registry()
         reg.load_registry(pjoin(self.temp_dir, 'registry.json'))
-        reg.validate_file(pjoin(self.temp_dir, 'registry.json'))
+        #reg.validate_file(pjoin(self.temp_dir, 'registry.json'))
+        reg.validate_file(pjoin(self.temp_dir))
 
     def test_loading_bad_registry_extra_comma(self):
         # extra comma before last field in registry
@@ -168,25 +169,16 @@ class TestRegistry(object):
         reg1 = mod.Registry()
         reg1.add_table('asset')
         reg1.add_check('asset', 'asset_setup',
-               check_name='asset_setup',
-               check_status='active',
-               check_type='setup',
-               check_mode=None,
-               check_scope=None)
+               check_name='asset_setup', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
 
         reg1.add_check('asset', 'rule_pk1',
-               check_name='rule_uniqueness',
-               check_status='active',
-               check_type='rule',
-               check_mode='full',
-               check_scope='row')
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
 
         reg1.add_check('asset', 'teardown',
-               check_name='asset_teardown',
-               check_status='active',
-               check_type='setup',
-               check_mode=None,
-               check_scope=None)
+               check_name='asset_teardown', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
 
         reg1.write(pjoin(self.temp_dir, 'registry.json'))
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
@@ -196,30 +188,90 @@ class TestRegistry(object):
 
         assert reg1.registry == reg2.registry
 
-    def test_filter_registry(self):
+    def test_filter_registry_no_args(self):
         reg1 = mod.Registry()
         reg1.add_table('asset')
         reg1.add_check('asset', 'asset_setup',
-               check_name='asset_setup',
-               check_status='active',
-               check_type='setup',
-               check_mode=None,
-               check_scope=None)
+               check_name='asset_setup', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
         reg1.add_check('asset', 'rule_pk1',
-               check_name='rule_uniqueness',
-               check_status='active',
-               check_type='rule',
-               check_mode='full',
-               check_scope='row')
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
         reg1.add_check('asset', 'teardown',
-               check_name='asset_teardown',
-               check_status='active',
-               check_type='setup',
-               check_mode=None,
-               check_scope=None)
+               check_name='asset_teardown', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
         reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
         reg1.filter_registry()
         assert 'check_name' in reg1.registry['asset']['rule_pk1']
+
+    def test_filter_registry_with_table(self):
+        reg1 = mod.Registry()
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'rule_pk1',
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.add_table('cust')
+        reg1.add_check('cust', 'rule_pk1',
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+        reg1.filter_registry('cust')
+        assert 'cust' in reg1.registry
+        assert 'rule_pk1' in reg1.registry['cust']
+        assert 'asset' not in reg1.registry
+
+    def test_filter_registry_with_check(self):
+        reg1 = mod.Registry()
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'asset_setup',
+               check_name='asset_setup', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
+        reg1.add_check('asset', 'rule_pk1',
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.add_check('asset', 'rule_fk1',
+               check_name='rule_foreign_key', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.add_check('asset', 'teardown',
+               check_name='asset_teardown', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
+        reg1.add_table('cust')
+        reg1.add_check('cust', 'rule_pk1',
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+        reg1.filter_registry(None, 'rule_pk1')
+        assert 'cust' in reg1.registry
+        assert 'rule_pk1' in reg1.registry['cust']
+        assert 'asset' in reg1.registry
+        assert 'rule_pk1' in reg1.registry['asset']
+        assert 'rule_fk1' not in reg1.registry['asset']
+
+    def test_filter_registry_with_table_and_check(self):
+        reg1 = mod.Registry()
+        reg1.add_table('asset')
+        reg1.add_check('asset', 'asset_setup',
+               check_name='asset_setup', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
+        reg1.add_check('asset', 'rule_pk1',
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.add_check('asset', 'rule_fk1',
+               check_name='rule_foreign_key', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+        reg1.add_check('asset', 'teardown',
+               check_name='asset_teardown', check_status='active',
+               check_type='setup', check_mode=None, check_scope=None)
+        reg1.add_table('cust')
+        reg1.add_check('cust', 'rule_pk1',
+               check_name='rule_uniqueness', check_status='active',
+               check_type='rule', check_mode='full', check_scope='row')
+
+        reg1.validate_file(pjoin(self.temp_dir, 'registry.json'))
+        reg1.filter_registry('cust', 'rule_pk1')
+        assert 'cust' in reg1.registry
+        assert 'rule_pk1' in reg1.registry['cust']
+        assert 'asset' not in reg1.registry
 
     def test_validation(self):
         reg1 = mod.Registry()
