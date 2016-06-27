@@ -3,10 +3,8 @@
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2015 Will Farmer and Ken Farmer
+Copyright 2015, 2016 Will Farmer and Ken Farmer
 """
-
-
 
 import os, sys, time
 from os.path import dirname, basename, exists, isfile, isdir
@@ -14,8 +12,7 @@ import json
 import argparse
 
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
-import hadoopinspector.core as core
-__version__ = '0.0.3'
+from hadoopinspector._version import __version__
 
 def main():
     args = get_args()
@@ -46,7 +43,6 @@ def get_args():
     parser.add_argument('--kv',
                         nargs='*',
                         help='key-value pairs - colon between k & v, each k:v in quotes')
-
     parser.add_argument('--version',
                         action='version',
                         version=__version__,

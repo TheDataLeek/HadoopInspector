@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
 import uuid
@@ -30,9 +30,9 @@ setup(name             = 'hadoop-inspector',
       keywords         = "data quality management health",
       author           = 'Will Farmer, Ken Farmer'      ,
       author_email     = 'willzfarmer@gmail.com, kenfar@gmail.com',
-      url              = 'http://github.com/kenfar/hadoop-inspector',
+      url              = 'http://github.com/willzfarmer/hadoop-inspector',
       license          = 'BSD'             ,
-      classifiers=[
+      classifiers      = [
             'Development Status :: 4 - Beta'                         ,
             'Environment :: Console'                                 ,
             'Intended Audience :: Information Technology'            ,
@@ -43,8 +43,12 @@ setup(name             = 'hadoop-inspector',
             'Topic :: Database'                                      ,
             'Topic :: Scientific/Engineering :: Information Analysis',
             ],
-      scripts      = ['scripts/hadoopinspector_demogen.py',
-                      'scripts/hadoopinspector_runner.py' ],
+      scripts          = ['scripts/hadoopinspector_demogen.py',
+                          'scripts/hadoopinspector_runner.py' ],
       install_requires = REQUIREMENTS,
-      packages     = find_packages(),
+      packages         = find_packages(),
+      include_package_data = True,
+      entry_points     = { 'console_scripts': [ 'hadoopinspector_server = hadoopinspector.scripts.hadoopinspector_server:run' ] },
+      package_data     = { 'static': 'HadoopInspector/server/static',
+                           'templates': 'HadoopInspector/server/templates' }
      )
