@@ -88,10 +88,18 @@ class Registry(object):
                 new_reg[loaded_table] = self.registry[loaded_table]
             elif filter_table == loaded_table and filter_check is None:
                 new_reg[loaded_table] = self.registry[loaded_table]
-            else:
+            elif filter_table == loaded_table and filter_check:
                 for loaded_check in self.registry[loaded_table]:
                     if loaded_check == filter_check:
-                        new_reg[loaded_table][loaded_check] = self.registry[loaded_check][filter_check]
+                        if loaded_table not in new_reg:
+                            new_reg[loaded_table] = {}
+                        new_reg[loaded_table][loaded_check] = self.registry[loaded_table][filter_check]
+            elif filter_table is None and filter_check:
+                for loaded_check in self.registry[loaded_table]:
+                    if loaded_check == filter_check:
+                        if loaded_table not in new_reg:
+                            new_reg[loaded_table] = {}
+                        new_reg[loaded_table][loaded_check] = self.registry[loaded_table][filter_check]
         self.registry = new_reg
 
     def add_table(self, table):
@@ -118,6 +126,26 @@ class Registry(object):
                 self._abort("Invalid registry checkvar: %s" % key)
             self.registry[table][check][key] = checkvars[key]
 
+    def add_setup_check(self, table, check, check_name, check_status, check_type,
+                  check_mode, **checkvars):
+        """ Add a check structure to registry.  If no registry is provided,
+            then it'll add this to the registry.
+        """
+        if table not in self.registry:
+            self.add_table(table)
+
+        #--- finally, add check:
+        self.registry[table][check] = {
+               'check_name':    check_name,
+               'check_status':  check_status,
+               'check_type':    check_type,
+               'check_mode':    check_mode }
+        for key in checkvars:
+            if not key.startswith('hapinsp_checkcustom_'):
+                self.logger.critical("Invalid registry check (%s) - invalid checkvar (%s)", check, key)
+                self._abort("Invalid registry checkvar: %s" % key)
+            self.registry[table][check][key] = checkvars[key]
+
     def write(self, filename=None, registry=None):
         if registry is None:
             registry = self.registry
@@ -138,7 +166,7 @@ class Registry(object):
             with open(filename) as infile:
                 json_str = infile.read()
                 try:
-                    python_obj, reg_errors, reg_stats = demjson.decode(json_str, return_errors=True)
+                    self.registry, reg_errors, reg_stats = demjson.decode(json_str, return_errors=True)
                 except demjson.JSONDecodeError as e:
                     self.logger.critical("registry json validation error: %s", e)
                     for err in reg_errors:
@@ -154,12 +182,36 @@ class Registry(object):
             self._abort("Invalid registry file - could not open")
 
         try:
-            self.validate(python_obj)
+            self.validate()
         except:
             self.logger.critical("registry file validation failed")
             raise
 
-    def validate(self, registry):
+
+    def default(self):
+        for table in self.registry:
+            for check in self.registry[table]:
+                checkobj = self.registry[table][check]
+
+                if checkobj.get('check_type', None) is None:
+                    checkobj['check_type'] = 'rule'
+
+                if checkobj['check_type'] == 'setup':
+                    if 'check_mode' not in checkobj:
+                        checkobj['check_mode'] = None
+                    if 'check_scope' not in checkobj:
+                        checkobj['check_scope'] = None
+                elif checkobj['check_type'] == 'rule':
+                    if 'check_mode' not in checkobj:
+                        checkobj['check_mode'] = 'full'
+                    if 'check_scope' not in checkobj:
+                        checkobj['check_scope'] = 'row'
+
+                if checkobj.get('check_status', None) is None:
+                    checkobj['check_status'] = 'active'
+
+
+    def validate(self):
 
         regular_check_schema = {
              "type": "object",
@@ -183,7 +235,7 @@ class Registry(object):
                                     "enum": ["active", "inactive"] },
                     "check_type":   {"type": "string",
                                     "enum": ["setup", "teardown"] },
-                    "check_mode":   {"type": "null"},
+                    "check_mode":   {"type": "any"},
                     "check_scope":  {"type": "null"}
                            }
         }
@@ -203,26 +255,21 @@ class Registry(object):
             except:
                 self._abort("Error encountered while processing Registry")
 
-        if not isinstance(registry, dict):
+        if not isinstance(self.registry, dict):
             self._abort(msg="Invalid registry")
-        for table in registry:
-            if not isinstance(registry[table], dict):
+        for table in self.registry:
+            if not isinstance(self.registry[table], dict):
                 self._abort(msg="Invalid registry table: %s" % table)
-            for check in registry[table]:
-                check_type = registry[table][check].get('check_type', None)
+            for check in self.registry[table]:
+                check_type = self.registry[table][check].get('check_type', None)
                 if check_type is None:
                     self._abort(msg="Missing check_type for: %s" % table )
                 else:
-                    validate_check(registry[table][check], check_type)
-
-
-
-
-
-
-
-
-
-
-
-
+                    try:
+                        validate_check(self.registry[table][check], check_type)
+                    except:
+                        self.logger.debug('table: %s', table)
+                        self.logger.debug('check: %s', check)
+                        self.logger.debug(self.registry[table][check])
+                        self.logger.critical('table: %s check: %s failure!', table, check)
+                        raise

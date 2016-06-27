@@ -27,16 +27,20 @@ def main():
     args = get_args()
     runner_logger = setup_runner_logger(args.log_dir, args.log_level, args.log_to_console)
     runner_logger.info("runner starting now")
+    if args.user_table_vars:
+        runner_logger.info("user table vars: %s", args.user_table_vars)
 
     reg = registry.Registry()
     reg.load_registry(args.registry_filename)
+    reg.default()
     reg.filter_registry(args.table, args.check)
+    reg.validate()
 
     check_repo = core.CheckRepo(args.check_dir)
     check_results = chk_results.CheckResults(args.instance, args.database, db_fqfn=args.results_filename)
 
     checker = check_engine.CheckRunner(reg, check_repo, check_results, args.instance, args.database,
-                                       args.log_dir, args.log_level)
+                                       args.log_dir, args.log_level, args.user_table_vars)
     checker.add_db_var('hapinsp_instance', args.instance)
     checker.add_db_var('hapinsp_database', args.database)
     checker.add_db_var('hapinsp_ssl',      args.ssl)
@@ -47,7 +51,7 @@ def main():
         print("===================== final report =======================")
         for rec in checker.results.get_formatted_results(args.detail_report):
             fields = rec.split('|')
-            print('{tab:<30} {rule:<40} {mode:<12} {rc:<7} {cnt:<7}'.format(tab=fields[0], rule=fields[1],
+            print('{tab:<{twidth}.{twidth}} {rule:<{rwidth}.{rwidth}} {mode:<12} {rc:<7} {cnt:<7}'.format(twidth=40, rwidth=40, tab=fields[0], rule=fields[1],
                          mode=(fields[2] or 'unk'), rc=(fields[3] or 'unk'), cnt=(fields[4] or 0) ) )
         print('')
 
@@ -82,6 +86,10 @@ def get_args():
     parser.add_argument('--registry-filename',
                         required=True,
                         help='registry file contains check config')
+    parser.add_argument('--user-table-vars',
+                        default=None,
+                        nargs='*',
+                        help='add space-delimited key-values after any setup checks')
     parser.add_argument('--results-filename',
                         required=True,
                         help='results sqlite file')
@@ -113,19 +121,26 @@ def get_args():
 
     args = parser.parse_args()
 
-    if not args.check_dir or not isdir(args.check_dir):
-        print('Supplied test directory does not exist. Please create.')
-        sys.exit(1)
+    if not isdir(args.check_dir):
+        parser.error('Supplied check directory does not exist. Please correct.')
+    if not args.check_dir:
+        parser.error('Check directory was not provied. Please provide.')
     if not isdir(args.log_dir):
-        print('Supplied log directory does not exist.  Please create.')
-        sys.exit(1)
+        parser.error('Supplied log directory does not exist.  Please create.')
     if not isfile(args.registry_filename):
-        print('Supplied registry-filename does not exist.  Please correct.')
-        sys.exit(1)
+        parser.error('Supplied registry-filename does not exist.  Please correct.')
     if args.detail_report:
         args.report = True
     if args.ssl is None:
         args.ssl = False
+    if args.user_table_vars is not None:
+        kw_dict = {}
+        for kw_str in args.user_table_vars:
+            kw_parts = kw_str.split('=')
+            if len(kw_parts) != 2:
+                parser.error('Invalid user_args: must be space-delimited list of key=value')
+            kw_dict[kw_parts[0]] = kw_parts[1]
+        args.user_table_vars = kw_dict
 
     return args
 

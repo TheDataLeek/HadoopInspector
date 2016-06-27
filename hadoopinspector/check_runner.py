@@ -19,7 +19,8 @@ import hadoopinspector.core as core
 
 class CheckRunner(object):
 
-    def __init__(self, registry, check_repo, check_results, instance, database, run_log_dir, log_level='debug'):
+    def __init__(self, registry, check_repo, check_results, instance, database,
+                 run_log_dir, log_level='debug', user_table_vars=None):
         """
         """
         assert isdir(run_log_dir)
@@ -29,6 +30,10 @@ class CheckRunner(object):
         self.results  = check_results
         self.instance = instance
         self.database = database
+        if not user_table_vars:
+            self.user_table_vars = {}
+        else:
+            self.user_table_vars = {'hapinsp_tablecustom_%s' % key:var for (key, var) in user_table_vars.iteritems() }
         self.db_vars = []
         self.check_vars = []
         self.table_vars = []
@@ -167,11 +172,14 @@ class CheckRunner(object):
                 if reg_check['check_status'] == 'active':
                     self._run_setup_check(table, setup_check, reg_check)
 
+            #------  user table vars get set next - and may override check or other vars  ----------
+            for key, val in self.user_table_vars.items():
+                self.add_table_var(key, val)
+
             # bypass checks if setup marked this table inactive:
             if table_status == 'inactive':
                 continue
 
-            # regular checks (could be either rules or prfiles)
             #------  regular checks (rules or profiles) can now run  -----------------------------
             for check in sorted([ x for x in self.registry.registry[table]
                                   if self.registry.registry[table][x]['check_type']
@@ -188,7 +196,6 @@ class CheckRunner(object):
 
         # drop out if inactive:
         if reg_check['check_status'] == 'inactive':
-            #kenpatch: count is failing, was changed to violations
             self.results.add(table, setup_check,
                              check_status=reg_check['check_status'],
                              check_type='setup', setup_vars='')
@@ -272,7 +279,7 @@ class CheckRunner(object):
         except ValueError as e:
             count        = -1
             rc           = 202
-            self.both_logger('ERROR', "Failed check: %s" % check)
+            self.both_logger('ERROR', "Failed check: %s for table: %s" % (check, table))
             self.check_logger.error("Error: JSON error: %s", e)
             self.check_logger.error("Error on parsing  %s  %s", check_fn, raw_output)
             actual_mode  = None
@@ -348,6 +355,10 @@ class CheckVars(object):
                     if not core.isnumeric(val):
                         self.check_logger.error("invalid violations field")
                         self.violations_cnt = -1
+            elif key.startswith('hapinsp_tablecustom_'):
+                self.check_logger.debug('%s=%s', key, val)
+            elif key.startswith('hapinsp_'):
+                self.check_logger.debug('%s=%s', key, val)
             else:
                 msg = "Invalid check result - key has bad name: %s" % key
                 self.check_logger.error(msg)
@@ -397,7 +408,6 @@ class SetupVars(object):
             return False
 
     def _parse_raw_output(self):
-        self.check_logger.debug('point b')
         if self.raw_output is None:
             raise ValueError('setup output is None')
         elif isinstance(self.raw_output, str) and self.raw_output.strip() == '':
@@ -431,6 +441,7 @@ class SetupVars(object):
                     self.data_stop_timestamp = val
             elif self._is_custom_var(key):
                 self.tablecustom_vars[key] = val
+                self.check_logger.debug('tablecustom_%s=%s', key, val)
             else:
                 raise ValueError("Invalid setup_check result - key has bad name: %s" % key)
 
