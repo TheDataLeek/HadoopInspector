@@ -222,7 +222,7 @@ class Registry(object):
                     "check_type":   {"type": "string",
                                     "enum": ["rule", "profile"] },
                     "check_mode":   {"type": "string",
-                                    "enum": ["full", "part"] },
+                                    "enum": ["full", "incremental"] },
                     "check_scope":  {"type": "string",
                                     "enum": ["row", "table", "database"] }
                            }

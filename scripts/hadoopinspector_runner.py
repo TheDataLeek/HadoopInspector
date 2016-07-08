@@ -27,6 +27,9 @@ def main():
     args = get_args()
     runner_logger = setup_runner_logger(args.log_dir, args.log_level, args.log_to_console)
     runner_logger.info("runner starting now")
+    runner_logger.info("instance: %s", args.instance)
+    runner_logger.info("database: %s", args.database)
+    runner_logger.info("log_level: %s", args.log_level)
     if args.user_table_vars:
         runner_logger.info("user table vars: %s", args.user_table_vars)
 
@@ -49,10 +52,13 @@ def main():
     if args.report:
         print('')
         print("===================== final report =======================")
+        print('{tab:<{twidth}.{twidth}} {rule:<{rwidth}.{rwidth}} {mode:<12} {rc:<7} {cnt:<7} {data_start:<20} {data_stop:<20}'.format(twidth=40, rwidth=40, tab='table',  rule='rule',
+                         mode='mode', rc='rc', cnt='cnt', data_start='data_start', data_stop='data_stop') )
+        print('')
         for rec in checker.results.get_formatted_results(args.detail_report):
             fields = rec.split('|')
-            print('{tab:<{twidth}.{twidth}} {rule:<{rwidth}.{rwidth}} {mode:<12} {rc:<7} {cnt:<7}'.format(twidth=40, rwidth=40, tab=fields[0], rule=fields[1],
-                         mode=(fields[2] or 'unk'), rc=(fields[3] or 'unk'), cnt=(fields[4] or 0) ) )
+            print('{tab:<{twidth}.{twidth}} {rule:<{rwidth}.{rwidth}} {mode:<12} {rc:<7} {cnt:<7} {data_start:<20} {data_stop:<20}'.format(twidth=40, rwidth=40, tab=fields[0], rule=fields[1],
+                         mode=(fields[2] or 'unk'), rc=(fields[3] or 'unk'), cnt=(fields[4] or 0), data_start=fields[6], data_stop=fields[7]) )
         print('')
 
     runner_logger.info("runner terminating now with rc: %s", checker.results.get_max_rc())

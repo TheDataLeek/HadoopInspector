@@ -6,7 +6,7 @@ in the source code root directory for the full language or refer to it here:
 Copyright 2015, 2016 Will Farmer and Ken Farmer
 """
 
-import os, sys, subprocess
+import os, sys, subprocess, datetime
 import json, logging
 from os.path import isdir, isfile, exists, dirname, basename
 from os.path import join as pjoin
@@ -14,7 +14,6 @@ import errno
 from pprint import pprint as pp
 
 import hadoopinspector.core as core
-
 
 
 class CheckRunner(object):
@@ -36,7 +35,7 @@ class CheckRunner(object):
             self.user_table_vars = {'hapinsp_tablecustom_%s' % key:var for (key, var) in user_table_vars.iteritems() }
         self.db_vars = []
         self.check_vars = []
-        self.table_vars = []
+        self.table_vars = []  # FIXME why list rather than dict?
         self.prior_table_vars = []
         self.run_log_dir = run_log_dir
         self.log_level = log_level
@@ -118,8 +117,18 @@ class CheckRunner(object):
         if not key.startswith('hapinsp_table'):
             self.run_logger.error("invalid table_var of: %s", key)
         else:
+            value = '' if value is None or value.strip().lower() == 'none' else value
             self.table_vars.append((key, value))
             os.environ[key] = str(value)
+
+    def get_table_var(self, key, default='nodefault'):
+        for item in self.table_vars:
+            if key == item[0]:
+                return item[1]
+        if default != 'nodefault':
+            return default
+        else:
+            raise KeyError('%s not found' % key)
 
     def drop_table_vars(self):
         uniq_keys = { x[0] for x in self.table_vars }
@@ -131,7 +140,12 @@ class CheckRunner(object):
         if not key.startswith('hapinsp_table'):
             self.run_logger.error("invalid table_var of: %s", key)
         else:
-            adj_key = key + '_prior'
+            value = '' if value is None or value.strip().lower() == 'none' else value
+            if key.endswith('_prior'):
+                adj_key = key
+            else:
+                adj_key = key + '_prior'
+            self.run_logger.debug('add prior key: %s val: %s' % (adj_key, value))
             self.prior_table_vars.append((adj_key, value))
             os.environ[adj_key] = str(value)
 
@@ -164,6 +178,7 @@ class CheckRunner(object):
 
             self.add_table_var('hapinsp_table', table)
             table_status = 'active'
+            self.run_logger.debug('table: %s', table)
 
             #------  setup checks must happen first.   -----------------------------
             for setup_check in sorted([ x for x in self.registry.registry[table]
@@ -194,11 +209,15 @@ class CheckRunner(object):
 
     def _run_setup_check(self, table, setup_check, reg_check):
 
+        start_iso8601ext = datetime.datetime.utcnow()
         # drop out if inactive:
         if reg_check['check_status'] == 'inactive':
+            stop_iso8601ext = datetime.datetime.utcnow()
             self.results.add(table, setup_check,
                              check_status=reg_check['check_status'],
-                             check_type='setup', setup_vars='')
+                             check_type='setup', setup_vars='',
+                             run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
+                             data_start_timestamp=None, data_stop_timestamp=None)
             return
 
         # configure logger:
@@ -211,7 +230,9 @@ class CheckRunner(object):
             prior_setup_vars = SetupVars(prior_setup_vars_string, self.check_logger)
             for key, val in prior_setup_vars.tablecustom_vars.items():
                 self.add_prior_table_var(key, val)
-            self.add_prior_table_var('hapinsp_tablecustom_internal_rc_prior', prior_setup_vars.internal_rc)
+            self.add_prior_table_var('hapinsp_tablecustom_internal_rc', prior_setup_vars.internal_rc)
+            self.add_prior_table_var('hapinsp_table_data_start_ts', prior_setup_vars.data_start_ts)
+            self.add_prior_table_var('hapinsp_table_data_stop_ts', prior_setup_vars.data_stop_ts)
 
         # add envvars specific to this check from the registry
         for key, val in reg_check.items():
@@ -237,23 +258,37 @@ class CheckRunner(object):
             self.check_logger.error("Error: JSON error: %s", e)
             self.check_logger.error("Error on parsing %s %s", setup_check, raw_output)
         else:
+            self.run_logger.debug('table: %s, setup tablecustom results: %s', table, setup_vars.tablecustom_vars)
             rc = max(int(check_rc), int(setup_vars.internal_rc))
             for key, val in setup_vars.tablecustom_vars.items():
                 self.add_table_var(key, val)
             self.add_table_var('hapinsp_table_mode', setup_vars.table_mode)
+            self.add_table_var('hapinsp_table_data_start_ts', setup_vars.data_start_ts)
+            self.add_table_var('hapinsp_table_data_stop_ts', setup_vars.data_stop_ts)
 
         count = None
+        stop_iso8601ext = datetime.datetime.utcnow()
+        saved_vars = setup_vars.tablecustom_vars
+        saved_vars['data_start_ts'] = setup_vars.data_start_ts
+        saved_vars['data_stop_ts'] = setup_vars.data_stop_ts
         self.results.add(table, setup_check, count,
                           rc, reg_check['check_status'],
                           check_mode=setup_vars.table_mode,
-                          check_type='setup', setup_vars=setup_vars.tablecustom_vars)
+                          check_type='setup', setup_vars=saved_vars,
+                          run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
+                          data_start_timestamp=setup_vars.data_start_ts,
+                          data_stop_timestamp=setup_vars.data_stop_ts)
         self.drop_prior_table_vars()
 
 
     def _run_check(self, table, check, reg_check):
 
+        start_iso8601ext = datetime.datetime.utcnow()
         if reg_check['check_status'] == 'inactive':
-            self.results.add(table, check, check_status='inactive')
+            stop_iso8601ext = datetime.datetime.utcnow()
+            self.results.add(table, check, check_status='inactive',
+                             run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
+                             data_start_timestamp=None, data_stop_timestamp=None)
             return
 
         # add envvars specific to this check from the registry
@@ -286,9 +321,21 @@ class CheckRunner(object):
         else:
             count       = check_vars.violation_cnt
             rc          = max(int(check_rc), int(check_vars.internal_rc))
+            self.run_logger.debug('table: %s, check: %s, rc: %s, violations: %s, check log: %s', table, check, rc, count, check_vars.log)
 
+        stop_iso8601ext = datetime.datetime.utcnow()
+        if actual_mode == 'incremental':
+            actual_data_start_iso8601 = self.get_table_var('hapinsp_table_data_start_ts', None)
+            actual_data_stop_iso8601  = self.get_table_var('hapinsp_table_data_stop_ts', None)
+        else:
+            actual_data_start_iso8601 = None
+            actual_data_stop_iso8601 = None
         self.results.add(table, check, count, rc, reg_check['check_status'],
-                         check_mode=actual_mode, setup_vars=dict(self.check_vars + self.table_vars))
+                         check_mode=actual_mode, setup_vars=dict(self.check_vars + self.table_vars),
+                         run_start_timestamp=start_iso8601ext,
+                         run_stop_timestamp=stop_iso8601ext,
+                         data_start_timestamp=actual_data_start_iso8601,
+                         data_stop_timestamp=actual_data_stop_iso8601)
 
         # remove any check-specific envvars:
         self.drop_check_vars()
@@ -314,6 +361,7 @@ class CheckVars(object):
         self.internal_rc      = None
         self.violation_cnt    = None
         self._mode            = None
+        self.log              = None
         self.check_logger     = check_logger
         self._parse_raw_output()
 
@@ -350,6 +398,7 @@ class CheckVars(object):
                     self.mode = val
                 elif key == 'log':
                     self.check_logger.info(val)
+                    self.log = val
                 elif key == 'violations':
                     self.violation_cnt = val
                     if not core.isnumeric(val):
@@ -374,13 +423,13 @@ class CheckVars(object):
 class SetupVars(object):
 
     def __init__(self, raw_output, check_logger):
-        self.reserved_keys    = ['rc', 'table_status', 'mode', 'log']
+        self.reserved_keys    = ['rc', 'table_status', 'mode', 'log', 'data_start_ts', 'data_stop_ts']
         self.raw_output       = raw_output
         self.tablecustom_vars = {}
         self.internal_rc      = -1
         self.table_status     = 'active'
-        self.data_start_timestamp = None
-        self.data_stop_timestamp   = None
+        self.data_start_ts    = None
+        self.data_stop_ts     = None
         self._table_mode      = None
         self.check_logger     = check_logger
         self._parse_raw_output()
@@ -424,6 +473,8 @@ class SetupVars(object):
             raise
 
         self.internal_rc = None
+        self.data_start_ts = None
+        self.data_stop_ts = None
         self.table_status = 'active'
         for key, val in output_vars.items():
             if self._is_reserved_var(key):
@@ -435,10 +486,24 @@ class SetupVars(object):
                     self.check_logger.info(val)
                 elif key == 'mode' and val:
                     self.table_mode = val
-                elif key == 'data_start_timestamp' and val:
-                    self.data_start_timestamp = val
-                elif key == 'data_stop_timestamp' and val:
+                elif key == 'data_start_ts' and val:
+                    if not core.valid_iso8601(val, 'basic'):
+                        raise ValueError("Invalid setup_check result - data_start_ts has invalid value: %s" % val)
+                    self.data_start_ts = val
+                elif key == 'data_stop_ts' and val:
+                    if not core.valid_iso8601(val, 'basic'):
+                        raise ValueError("Invalid setup_check result - data_stop_ts has invalid value: %s" % val)
                     self.data_stop_timestamp = val
+            elif key == 'data_start_timestamp':
+                if not core.valid_iso8601(val, 'basic'):
+                    raise ValueError("Invalid setup_check result - data_stop_ts has invalid value: %s" % val)
+                self.data_start_timestamp = val
+                self.check_logger.warning("deprecated data_start_timestamp found!")
+            elif key == 'data_stop_timestamp':
+                if not core.valid_iso8601(val, 'basic'):
+                    raise ValueError("Invalid setup_check result - data_stop_ts has invalid value: %s" % val)
+                self.data_stop_timestamp = val
+                self.check_logger.warning("deprecated data_stop_timestamp found!")
             elif self._is_custom_var(key):
                 self.tablecustom_vars[key] = val
                 self.check_logger.debug('tablecustom_%s=%s', key, val)
