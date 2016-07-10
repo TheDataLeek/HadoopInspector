@@ -57,6 +57,7 @@ def main():
         print('')
         for rec in checker.results.get_formatted_results(args.detail_report):
             fields = rec.split('|')
+            #pp(fields)
             print('{tab:<{twidth}.{twidth}} {rule:<{rwidth}.{rwidth}} {mode:<12} {rc:<7} {cnt:<7} {data_start:<20} {data_stop:<20}'.format(twidth=40, rwidth=40, tab=fields[0], rule=fields[1],
                          mode=(fields[2] or 'unk'), rc=(fields[3] or 'unk'), cnt=(fields[4] or 0), data_start=fields[6], data_stop=fields[7]) )
         print('')

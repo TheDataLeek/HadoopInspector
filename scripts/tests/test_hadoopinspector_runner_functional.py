@@ -59,7 +59,7 @@ class TestWithMockedCheckFiles(object):
                '--check-dir', self.check_dir,
                '--log-dir', self.log_dir,
                '--console-log',
-               '--report' ]
+               '--detail-report' ]
         if table:
             cmd.extend(['--table', table])
 
@@ -68,10 +68,12 @@ class TestWithMockedCheckFiles(object):
         run_rc = p.returncode
         report = []
         print("run_cmd report: ")
-        for line in results.split('\n'):
+        for index, line in enumerate(results.split('\n')):
             print(line)
             if '=========' in line:
                 continue
+            elif index == 2 and 'mode' in line:
+                continue # header
             else:
                 try:
                     rec = testtooling.report_rec_parser(line)
