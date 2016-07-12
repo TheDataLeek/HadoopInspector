@@ -1,3 +1,5 @@
+0.1.6 - fix setup.py reference to github account
+
 0.1.5 - improve data start & stop timestamps
 
 -  make these reserved variables
