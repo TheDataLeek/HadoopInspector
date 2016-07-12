@@ -30,7 +30,7 @@ setup(name             = 'hadoop-inspector',
       keywords         = "data quality management health",
       author           = 'Will Farmer, Ken Farmer'      ,
       author_email     = 'willzfarmer@gmail.com, kenfar@gmail.com',
-      url              = 'http://github.com/willzfarmer/hadoop-inspector',
+      url              = 'http://github.com/willzfarmer/HadoopInspector',
       license          = 'BSD'             ,
       classifiers      = [
             'Development Status :: 4 - Beta'                         ,
