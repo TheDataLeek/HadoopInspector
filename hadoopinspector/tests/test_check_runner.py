@@ -9,6 +9,7 @@ Copyright 2015 Will Farmer and Ken Farmer
 from __future__ import division
 import sys, os, shutil, stat
 import logging, datetime, tempfile
+from datetime import datetime as dtdt
 from pprint import pprint as pp
 from os.path import exists, isdir, isfile
 from os.path import join as pjoin
@@ -58,8 +59,14 @@ class TestCheckResults(object):
         shutil.rmtree(self.temp_dir)
 
     def add_2_checks_to_1_table(self, table, violations=0, rc=0):
-        self.check_results.add(table, 'check_fk1', violations, rc)
-        self.check_results.add(table, 'check_fk2', violations, rc)
+        start_dt = dtdt.utcnow() - datetime.timedelta(minutes=1)
+        stop_dt  = dtdt.utcnow()
+        self.check_results.add(table, 'check_fk1', violations, rc,
+                               run_start_timestamp=start_dt,
+                               run_stop_timestamp=stop_dt)
+        self.check_results.add(table, 'check_fk2', violations, rc,
+                               run_start_timestamp=start_dt,
+                               run_stop_timestamp=stop_dt)
 
     def add_1_demo_check_to_1_table(self, table, violations, rc, start_dt, stop_dt):
         self.check_results.add(table, 'check_fk1', violations, rc,

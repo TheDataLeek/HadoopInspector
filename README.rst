@@ -43,15 +43,15 @@ defects.
 Current Status
 --------------
 
-Our current focus has been to complete a minimum viable product that
-includes:
+The software consists primarily of three parts:
 
+-  hadoopinspector-runner.py - a test-runner that writes results to a
+   SQLite database and can produce a report of test results. This is the
+   primary and most updated component at this time.
+-  hapinsp\_httpserver.py - serves the UI.
 -  hadoopinspector-demogen.py - which can generate 50,000+ check results
    against a hypothetical user hadoop environment. This is used to
-   excercize the UI.
--  hadoopinspector-runner.py - a test-runner that writes results to a
-   SQLite database.
--  hapinsp\_httpserver.py - serves the UI.
+   exercise the UI.
 
 More info is on the
 `wiki <https://github.com/willzfarmer/HadoopInspector/wiki>`__
@@ -59,7 +59,6 @@ More info is on the
 Installation
 ------------
 
--  ideally create a dedicated virtualenv
 -  pip install hadoopinspector
 -  requires python 2.7
 
@@ -68,5 +67,5 @@ Licensing
 
 This source code is protected by the BSD license. See the file "LICENSE"
 in the source code root directory for the full language or refer to it
-here: http://opensource.org/licenses/BSD-3-Clause Copyright 2015 Will
-Farmer and Ken Farmer
+here: http://opensource.org/licenses/BSD-3-Clause Copyright 2015, 2016
+Will Farmer and Ken Farmer

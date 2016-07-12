@@ -150,7 +150,7 @@ def report_rec_parser(rec):
         raise EmptyRecError
 
     fields = rec.split()
-    if len(fields) != 5:
+    if len(fields) not in (5,7):
         raise ValueError("Not a report rec: %s" % rec)
     else:
         table = fields[0]
