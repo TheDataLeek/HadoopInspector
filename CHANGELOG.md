@@ -1,14 +1,21 @@
+0.1.5 - improve data start & stop timestamps
+
+   - make these reserved variables
+   - include them within basic runner reporting
+
 0.1.4 - remove inst & db from registry json files
-      - add minor fixes being used in prod
-      - add --ssl option to runner 
-      - add --version option to runner
-      - heavy refactoring & housekeeping
+
+   - add minor fixes being used in prod
+   - add --ssl option to runner 
+   - add --version option to runner
+   - heavy refactoring & housekeeping
 
 0.1.3 - add logging 
-      - improve registry json validation & user error reporting 
-      - fix test teardowns leaving behind some files
-      - fix tox errors
-      - fix misc minor defects
+
+   - improve registry json validation & user error reporting 
+   - fix test teardowns leaving behind some files
+   - fix tox errors
+   - fix misc minor defects
 
 0.1.2 - fix check display issues
 

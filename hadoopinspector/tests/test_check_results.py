@@ -10,6 +10,7 @@ from __future__ import division
 import sys, os, shutil, stat
 import logging, datetime
 import tempfile
+from datetime import datetime as dtdt
 from pprint import pprint as pp
 from os.path import exists, isdir, isfile
 from os.path import join as pjoin
@@ -39,8 +40,14 @@ class TestCheckResults(object):
         shutil.rmtree(self.temp_dir)
 
     def add_2_checks_to_1_table(self, table, violations=0, rc=0):
-        self.check_results.add(table, 'check_fk1', violations, rc)
-        self.check_results.add(table, 'check_fk2', violations, rc)
+        run_start_dt = dtdt.utcnow() - datetime.timedelta(minutes=1)
+        run_stop_dt = dtdt.utcnow()
+        self.check_results.add(table, 'check_fk1', violations, rc,
+                run_start_timestamp=run_start_dt,
+                run_stop_timestamp=run_stop_dt)
+        self.check_results.add(table, 'check_fk2', violations, rc,
+                run_start_timestamp=run_start_dt,
+                run_stop_timestamp=run_stop_dt)
 
     def add_1_demo_check_to_1_table(self, table, violations, rc, start_dt, stop_dt):
         self.check_results.add(table, 'check_fk1', violations, rc,

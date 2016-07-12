@@ -66,6 +66,8 @@ class CheckResults(object):
         assert check_status in (None, 'active', 'inactive')
         assert core.isnumeric(check_scope)
         assert core.isnumeric(check_severity_score)
+        assert isinstance(run_start_timestamp, datetime.datetime)
+        assert isinstance(run_stop_timestamp, datetime.datetime)
 
         if table not in self.results:
             self.results[table] = {}
@@ -108,11 +110,13 @@ class CheckResults(object):
             for setup_check in sorted({ x for x in self.results[tab]
                                 if self.results[tab][x]['check_type'] == 'setup' }):
                 if detail:
-                    rec = '%s|%s|%s|%s|%s|%s' % (tab, setup_check,
+                    rec = '%s|%s|%s|%s|%s|%s|%s|%s' % (tab, setup_check,
                                 self.results[tab][setup_check]['check_mode'],
                                 self.results[tab][setup_check]['rc'],
                                 coalesce(self.results[tab][setup_check]['violation_cnt'], ''),
-                                coalesce(self.results[tab][setup_check]['setup_vars'], '') )
+                                coalesce(self.results[tab][setup_check]['setup_vars'], ''),
+                                self.results[tab][setup_check]['data_start_timestamp'],
+                                self.results[tab][setup_check]['data_stop_timestamp'] )
                 else:
                     rec = '%s|%s|%s|%s|%s' % (tab, setup_check,
                                 self.results[tab][setup_check]['check_mode'],
@@ -123,11 +127,13 @@ class CheckResults(object):
             for check in sorted({ x for x in self.results[tab]
                             if self.results[tab][x]['check_type'] not in ('setup', 'teardown') }):
                 if detail:
-                    rec = '%s|%s|%s|%s|%s|%s' % (tab, check,
+                    rec = '%s|%s|%s|%s|%s|%s|%s|%s' % (tab, check,
                                 self.results[tab][check]['check_mode'],
                                 self.results[tab][check]['rc'],
                                 coalesce(self.results[tab][check]['violation_cnt'], ''),
-                                coalesce(self.results[tab][check]['setup_vars'], '') )
+                                coalesce(self.results[tab][check]['setup_vars'], ''),
+                                self.results[tab][check]['data_start_timestamp'],
+                                self.results[tab][check]['data_stop_timestamp'] )
                 else:
                     rec = '%s|%s|%s|%s|%s' % (tab, check,
                                 self.results[tab][check]['check_mode'],
