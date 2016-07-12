@@ -493,16 +493,16 @@ class SetupVars(object):
                 elif key == 'data_stop_ts' and val:
                     if not core.valid_iso8601(val, 'basic'):
                         raise ValueError("Invalid setup_check result - data_stop_ts has invalid value: %s" % val)
-                    self.data_stop_timestamp = val
+                    self.data_stop_ts = val
             elif key == 'data_start_timestamp':
                 if not core.valid_iso8601(val, 'basic'):
                     raise ValueError("Invalid setup_check result - data_stop_ts has invalid value: %s" % val)
-                self.data_start_timestamp = val
+                self.data_start_ts = val
                 self.check_logger.warning("deprecated data_start_timestamp found!")
             elif key == 'data_stop_timestamp':
                 if not core.valid_iso8601(val, 'basic'):
                     raise ValueError("Invalid setup_check result - data_stop_ts has invalid value: %s" % val)
-                self.data_stop_timestamp = val
+                self.data_stop_ts = val
                 self.check_logger.warning("deprecated data_stop_timestamp found!")
             elif self._is_custom_var(key):
                 self.tablecustom_vars[key] = val
