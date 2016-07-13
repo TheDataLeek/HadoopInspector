@@ -41,7 +41,7 @@ class CheckRunner(object):
         self.log_level = log_level
         self.check_file_handler = None
         self.check_logger = logging.getLogger('CheckLogger')
-        self.run_logger = logging.getLogger('RunnerLogger')
+        self.run_logger = logging.getLogger('main.check_runner')
 
     def _abort(self, msg):
         if self.check_logger:

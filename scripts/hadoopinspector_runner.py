@@ -160,7 +160,7 @@ def setup_runner_logger(logdir, log_level, log_to_console):
     log_filename = pjoin(logdir, 'runner.log')
 
     #--- create logger
-    logger = logging.getLogger('RunnerLogger')
+    logger = logging.getLogger('main')
     logger.setLevel(log_level.upper())
 
     #--- add formatting:

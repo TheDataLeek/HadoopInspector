@@ -23,7 +23,7 @@ class CheckRepo(object):
     def __init__(self, check_dir):
         self.check_dir = check_dir
         self.repo = {}
-        self.logger = logging.getLogger('RunnerLogger')
+        self.logger = logging.getLogger('main.core')
         for check_fn in os.listdir(self.check_dir):
             self.repo[check_fn] = {}
             self.repo[check_fn]['fqfn'] = pjoin(self.check_dir, check_fn)

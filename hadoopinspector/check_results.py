@@ -26,7 +26,7 @@ class CheckResults(object):
         self.start_dt = datetime.datetime.utcnow()
         self.results = {}
         self.setup_results = {}
-        self.logger = logging.getLogger('RunnerLogger')
+        self.logger = logging.getLogger('main.check_results')
 
         #--- create database & table if necessary:
         if not isfile(self.db_fqfn):

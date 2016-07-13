@@ -37,7 +37,7 @@ class Registry(object):
 
     def __init__(self):
         self.registry       = {}
-        self.logger = logging.getLogger('RunnerLogger')
+        self.logger = logging.getLogger('main.registry')
 
     def _abort(self, msg):
         if self.logger:
