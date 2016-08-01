@@ -42,6 +42,7 @@ class CheckRunner(object):
         self.check_file_handler = None
         self.check_logger = logging.getLogger('CheckLogger')
         self.run_logger = logging.getLogger('main.check_runner')
+        self.setup_vars = SetupVars({}, self.check_logger)  # will be overridden
 
     def _abort(self, msg):
         if self.check_logger:
@@ -145,7 +146,7 @@ class CheckRunner(object):
                 adj_key = key
             else:
                 adj_key = key + '_prior'
-            self.run_logger.debug('add prior key: %s val: %s' % (adj_key, value))
+            self.run_logger.debug('add prior key: %s val: %s', adj_key, value)
             self.prior_table_vars.append((adj_key, value))
             os.environ[adj_key] = str(value)
 
@@ -251,36 +252,37 @@ class CheckRunner(object):
 
         # parse & record the output:
         try:
-            setup_vars = SetupVars(raw_output, self.check_logger)
+            self.setup_vars = SetupVars(raw_output, self.check_logger)
         except ValueError as e:
-            setup_vars   = SetupVars({}, self.check_logger)
-            rc           = 201
+            self.setup_vars = SetupVars({}, self.check_logger)
+            rc = 201
             self.both_logger('error', "Failed setup_check: %s" % setup_check)
             self.check_logger.error("Error: JSON error: %s", e)
             self.check_logger.error("Error on parsing %s %s", setup_check, raw_output)
         else:
-            self.run_logger.debug('table: %s, setup tablecustom results: %s', table, setup_vars.tablecustom_vars)
-            rc = max(int(check_rc), int(setup_vars.internal_rc))
-            for key, val in setup_vars.tablecustom_vars.items():
+            self.run_logger.debug('table: %s, setup tablecustom results: %s', table, self.setup_vars.tablecustom_vars)
+            rc = max(int(check_rc), int(self.setup_vars.internal_rc))
+            for key, val in self.setup_vars.tablecustom_vars.items():
                 self.add_table_var(key, val)
-            self.add_table_var('hapinsp_table_mode', setup_vars.table_mode)
-            self.add_table_var('hapinsp_table_data_start_ts', setup_vars.data_start_ts)
-            self.add_table_var('hapinsp_table_data_stop_ts', setup_vars.data_stop_ts)
+            self.add_table_var('hapinsp_table_mode', self.setup_vars.table_mode)
+            self.add_table_var('hapinsp_table_data_start_ts', self.setup_vars.data_start_ts)
+            self.add_table_var('hapinsp_table_data_stop_ts', self.setup_vars.data_stop_ts)
 
         count = None
         stop_iso8601ext = datetime.datetime.utcnow()
-        saved_vars = setup_vars.tablecustom_vars
-        saved_vars['data_start_ts'] = setup_vars.data_start_ts
-        saved_vars['data_stop_ts'] = setup_vars.data_stop_ts
+        saved_vars = self.setup_vars.tablecustom_vars
+        saved_vars['data_start_ts'] = self.setup_vars.data_start_ts
+        saved_vars['data_stop_ts'] = self.setup_vars.data_stop_ts
         self.results.add(table, setup_check, count,
                           rc, reg_check['check_status'],
-                          check_mode=setup_vars.table_mode, check_unit='rows',
+                          check_mode=self.setup_vars.table_mode, check_unit='rows',
                           check_scope=-1, check_severity_score=-1,
                           check_policy_type='quality',
                           check_type='setup', setup_vars=saved_vars,
-                          run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
-                          data_start_timestamp=setup_vars.data_start_ts,
-                          data_stop_timestamp=setup_vars.data_stop_ts)
+                          run_start_timestamp=start_iso8601ext,
+                          run_stop_timestamp=stop_iso8601ext,
+                          data_start_timestamp=self.setup_vars.data_start_ts,
+                          data_stop_timestamp=self.setup_vars.data_stop_ts)
         self.drop_prior_table_vars()
 
 
@@ -289,11 +291,13 @@ class CheckRunner(object):
         start_iso8601ext = datetime.datetime.utcnow()
         if reg_check['check_status'] == 'inactive':
             stop_iso8601ext = datetime.datetime.utcnow()
-            self.results.add(table, check, check_status='inactive',
-                             check_mode=setup_vars.table_mode,
-                             check_unit='rows',
+            self.results.add(table, check, violations=-1, rc=-1,
+                             check_status='inactive',
                              check_type='rule',
                              check_policy_type='quality',
+                             check_mode=self.setup_vars.table_mode,
+                             check_unit='rows',
+                             check_scope=-1, check_severity_score=-1,
                              run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
                              data_start_timestamp=None, data_stop_timestamp=None)
             return
