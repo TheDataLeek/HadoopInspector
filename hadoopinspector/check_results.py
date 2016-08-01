@@ -23,7 +23,6 @@ class CheckResults(object):
         self.inst    = inst
         self.db      = db
         self.db_fqfn = db_fqfn
-        self.start_dt = datetime.datetime.utcnow()
         self.results = {}
         self.setup_results = {}
         self.logger = logging.getLogger('main.check_results')
@@ -44,19 +43,25 @@ class CheckResults(object):
             print(msg)
         sys.exit(1)
 
-    def add(self, table, check, violations=-1, rc=-1,
-            check_status='active',
-            check_type='rule',
-            check_policy_type='quality',
-            check_mode='full',
-            check_unit='rows',
-            check_scope=-1,
-            check_severity_score=-1,
+    def add(self, table, check, violations, rc,
+            check_status,
+            check_type,
+            check_policy_type,
+            check_mode,
+            check_unit,
+            check_scope,
+            check_severity_score,
             run_start_timestamp=None,
             run_stop_timestamp=None,
             data_start_timestamp=None,
             data_stop_timestamp=None,
             setup_vars=None):
+        assert check is not None
+        if check_type == 'rule':
+            assert violations is not None
+        else:
+            if violations in (None, '-1'):
+                violations = '0'
         assert core.isnumeric(rc)
         assert violations is None or core.isnumeric(violations), "Invalid violations: %s" % violations
         assert check_type   in ('rule', 'profile', 'setup', 'teardown')
@@ -108,7 +113,7 @@ class CheckResults(object):
         formatted_results = []
         for tab in sorted(self.results):
             for setup_check in sorted({ x for x in self.results[tab]
-                                if self.results[tab][x]['check_type'] == 'setup' }):
+                    if self.results[tab][x]['check_type'] == 'setup' }):
                 if detail:
                     rec = '%s|%s|%s|%s|%s|%s|%s|%s' % (tab, setup_check,
                                 self.results[tab][setup_check]['check_mode'],
@@ -149,7 +154,6 @@ class CheckResults(object):
         #todo: add "logical_delete" column for the deletes
         """
         conn = sqlite3.connect(self.db_fqfn)
-        stop_dt = datetime.datetime.utcnow()
         run_id  = 0
         cur  = conn.cursor()
         check_recs = []
@@ -164,10 +168,10 @@ class CheckResults(object):
                         check_fields['check_unit'],
                         check_fields['check_status'],
                         run_id,
-                        (check_fields['run_start_timestamp'] or self.start_dt),
-                        (check_fields['run_stop_timestamp']  or stop_dt),
-                        (check_fields['data_start_timestamp'] or check_fields['run_start_timestamp'] or self.start_dt),
-                        (check_fields['data_stop_timestamp']  or check_fields['run_stop_timestamp'] or stop_dt),
+                        check_fields['run_start_timestamp'],
+                        check_fields['run_stop_timestamp'],
+                        check_fields['data_start_timestamp'],
+                        check_fields['data_stop_timestamp'],
                         check_fields['rc'],
                         check_fields['check_scope'],
                         check_fields['check_severity_score'],

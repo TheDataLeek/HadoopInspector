@@ -215,7 +215,8 @@ class CheckRunner(object):
             stop_iso8601ext = datetime.datetime.utcnow()
             self.results.add(table, setup_check,
                              check_status=reg_check['check_status'],
-                             check_type='setup', setup_vars='',
+                             check_mode='full', check_unit='rows',
+                             check_type='setup', check_policy_type='quality', setup_vars='',
                              run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
                              data_start_timestamp=None, data_stop_timestamp=None)
             return
@@ -273,7 +274,9 @@ class CheckRunner(object):
         saved_vars['data_stop_ts'] = setup_vars.data_stop_ts
         self.results.add(table, setup_check, count,
                           rc, reg_check['check_status'],
-                          check_mode=setup_vars.table_mode,
+                          check_mode=setup_vars.table_mode, check_unit='rows',
+                          check_scope=-1, check_severity_score=-1,
+                          check_policy_type='quality',
                           check_type='setup', setup_vars=saved_vars,
                           run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
                           data_start_timestamp=setup_vars.data_start_ts,
@@ -287,6 +290,10 @@ class CheckRunner(object):
         if reg_check['check_status'] == 'inactive':
             stop_iso8601ext = datetime.datetime.utcnow()
             self.results.add(table, check, check_status='inactive',
+                             check_mode=setup_vars.table_mode,
+                             check_unit='rows',
+                             check_type='rule',
+                             check_policy_type='quality',
                              run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
                              data_start_timestamp=None, data_stop_timestamp=None)
             return
@@ -331,7 +338,10 @@ class CheckRunner(object):
             actual_data_start_iso8601 = None
             actual_data_stop_iso8601 = None
         self.results.add(table, check, count, rc, reg_check['check_status'],
-                         check_mode=actual_mode, setup_vars=dict(self.check_vars + self.table_vars),
+                         check_type='rule', check_policy_type='quality',
+                         check_mode=actual_mode, check_unit='rows',
+                         check_scope=-1, check_severity_score=-1,
+                         setup_vars=dict(self.check_vars + self.table_vars),
                          run_start_timestamp=start_iso8601ext,
                          run_stop_timestamp=stop_iso8601ext,
                          data_start_timestamp=actual_data_start_iso8601,

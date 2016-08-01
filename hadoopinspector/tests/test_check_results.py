@@ -43,14 +43,32 @@ class TestCheckResults(object):
         run_start_dt = dtdt.utcnow() - datetime.timedelta(minutes=1)
         run_stop_dt = dtdt.utcnow()
         self.check_results.add(table, 'check_fk1', violations, rc,
+                check_status='active',
+                check_type='rule',
+                check_policy_type='quality',
+                check_mode='full',
+                check_unit='rows',
+                check_scope=-1, check_severity_score=-1,
                 run_start_timestamp=run_start_dt,
                 run_stop_timestamp=run_stop_dt)
         self.check_results.add(table, 'check_fk2', violations, rc,
+                check_status='active',
+                check_type='rule',
+                check_policy_type='quality',
+                check_mode='full',
+                check_unit='rows',
+                check_scope=-1, check_severity_score=-1,
                 run_start_timestamp=run_start_dt,
                 run_stop_timestamp=run_stop_dt)
 
     def add_1_demo_check_to_1_table(self, table, violations, rc, start_dt, stop_dt):
         self.check_results.add(table, 'check_fk1', violations, rc,
+                               check_status='active',
+                               check_type='rule',
+                               check_policy_type='quality',
+                               check_mode='full',
+                               check_unit='rows',
+                               check_scope=-1, check_severity_score=-1,
                                run_start_timestamp=start_dt,
                                run_stop_timestamp=stop_dt)
 
