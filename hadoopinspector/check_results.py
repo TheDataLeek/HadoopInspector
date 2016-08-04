@@ -56,23 +56,37 @@ class CheckResults(object):
             data_start_timestamp=None,
             data_stop_timestamp=None,
             setup_vars=None):
-        assert check is not None
+
+        if check is None:
+            raise ValueError("invalid check value: %s" % check)
         if check_type == 'rule':
-            assert violations is not None
+            if violations is None:
+                raise ValueError("invalid violations value: %s" % violations)
         else:
             if violations in (None, '-1'):
                 violations = '0'
-        assert core.isnumeric(rc)
-        assert violations is None or core.isnumeric(violations), "Invalid violations: %s" % violations
-        assert check_type   in ('rule', 'profile', 'setup', 'teardown')
-        assert check_policy_type   in ('quality', 'consistency', 'data-management'), "invalid policy_type: %s" % check_policy_type
-        assert check_unit   in ('rows', 'tables')
-        assert check_mode   in ('full', 'incremental', 'auto', None), "invalid check_mode: %s" % check_mode
-        assert check_status in (None, 'active', 'inactive')
-        assert core.isnumeric(check_scope)
-        assert core.isnumeric(check_severity_score)
-        assert isinstance(run_start_timestamp, datetime.datetime)
-        assert isinstance(run_stop_timestamp, datetime.datetime)
+        if not core.isnumeric(rc):
+            raise ValueError("invalid core value: %s" % core)
+        if violations is not None and not core.isnumeric(violations):
+            raise ValueError("Invalid violations, should be None or a number, but is: %s" % violations)
+        if check_type not in ('rule', 'profile', 'setup', 'teardown'):
+            raise ValueError("invalid check_type, should be one of: rule, profile, setup, teardown, but is: %s" % check_type)
+        if check_policy_type not in ('quality', 'consistency', 'data-management'):
+            raise ValueError("invalid check_policy_type, should be one of: quality, consistency, data-management, but is: %s" % check_policy_type)
+        if check_unit not in ('rows', 'tables'):
+            raise ValueError("invalid check_unit, should be one of rows, tables, but is: %s" % check_unit)
+        if check_mode not in ('full', 'incremental', 'auto', None):
+            raise ValueError("invalid check_mode, should be one of full, incremental, auto, None, but is: %s" % check_mode)
+        if check_status not in (None, 'active', 'inactive'):
+            raise ValueError("invalid check_status value, should be one of None, active, inactive, but is: %s" % check_status)
+        if not core.isnumeric(check_scope):
+            raise ValueError("invalid check_scope value, should be a number, but is: %s" % check_scope)
+        if not core.isnumeric(check_severity_score):
+            raise ValueError("invalid check_severity_score value, should be a number, but is: %s" % check_severity_score)
+        if not isinstance(run_start_timestamp, datetime.datetime):
+            raise ValueError("invalid run_start_timestamp value, should be a datetime, but is: %s" % run_start_timestamp)
+        if not isinstance(run_stop_timestamp, datetime.datetime):
+            raise ValueError("invalid run_stop_timestamp value, should be a datetime, but is: %s" % run_stop_timestamp)
 
         if table not in self.results:
             self.results[table] = {}
@@ -114,14 +128,16 @@ class CheckResults(object):
         for tab in sorted(self.results):
             for setup_check in sorted({ x for x in self.results[tab]
                     if self.results[tab][x]['check_type'] == 'setup' }):
+                #pp(self.results[tab][setup_check])
                 if detail:
-                    rec = '%s|%s|%s|%s|%s|%s|%s|%s' % (tab, setup_check,
+                    rec = '%s|%s|%s|%s|%s|%s|%s|%s|%s' % (tab, setup_check,
                                 self.results[tab][setup_check]['check_mode'],
                                 self.results[tab][setup_check]['rc'],
                                 coalesce(self.results[tab][setup_check]['violation_cnt'], ''),
                                 coalesce(self.results[tab][setup_check]['setup_vars'], ''),
                                 self.results[tab][setup_check]['data_start_timestamp'],
-                                self.results[tab][setup_check]['data_stop_timestamp'] )
+                                self.results[tab][setup_check]['data_stop_timestamp'],
+                                self.results[tab][setup_check]['check_status'])
                 else:
                     rec = '%s|%s|%s|%s|%s' % (tab, setup_check,
                                 self.results[tab][setup_check]['check_mode'],
@@ -132,13 +148,14 @@ class CheckResults(object):
             for check in sorted({ x for x in self.results[tab]
                             if self.results[tab][x]['check_type'] not in ('setup', 'teardown') }):
                 if detail:
-                    rec = '%s|%s|%s|%s|%s|%s|%s|%s' % (tab, check,
+                    rec = '%s|%s|%s|%s|%s|%s|%s|%s|%s' % (tab, check,
                                 self.results[tab][check]['check_mode'],
                                 self.results[tab][check]['rc'],
                                 coalesce(self.results[tab][check]['violation_cnt'], ''),
                                 coalesce(self.results[tab][check]['setup_vars'], ''),
                                 self.results[tab][check]['data_start_timestamp'],
-                                self.results[tab][check]['data_stop_timestamp'] )
+                                self.results[tab][check]['data_stop_timestamp'],
+                                self.results[tab][check]['check_status'])
                 else:
                     rec = '%s|%s|%s|%s|%s' % (tab, check,
                                 self.results[tab][check]['check_mode'],

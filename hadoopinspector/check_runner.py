@@ -32,10 +32,10 @@ class CheckRunner(object):
         if not user_table_vars:
             self.user_table_vars = {}
         else:
-            self.user_table_vars = {'hapinsp_tablecustom_%s' % key:var for (key, var) in user_table_vars.iteritems() }
+            self.user_table_vars = user_table_vars  # FIXME why dict rather than list of tuples?
         self.db_vars = []
         self.check_vars = []
-        self.table_vars = []  # FIXME why list rather than dict?
+        self.table_vars = []  # FIXME why list of tuples rather than dict?
         self.prior_table_vars = []
         self.run_log_dir = run_log_dir
         self.log_level = log_level
@@ -123,9 +123,12 @@ class CheckRunner(object):
             os.environ[key] = str(value)
 
     def get_table_var(self, key, default='nodefault'):
-        for item in self.table_vars:
-            if key == item[0]:
-                return item[1]
+        try:
+            return self.user_table_vars[key]
+        except KeyError:
+            for item in self.table_vars:
+                if key == item[0]:
+                    return item[1]
         if default != 'nodefault':
             return default
         else:
@@ -178,7 +181,6 @@ class CheckRunner(object):
         for table in self.registry.registry:
 
             self.add_table_var('hapinsp_table', table)
-            table_status = 'active'
             self.run_logger.debug('table: %s', table)
 
             #------  setup checks must happen first.   -----------------------------
@@ -192,9 +194,10 @@ class CheckRunner(object):
             for key, val in self.user_table_vars.items():
                 self.add_table_var(key, val)
 
+            # ken 2016-08-03 - lets see how it works to remove this, and let all checks run - but with a table_status of # inactive:
             # bypass checks if setup marked this table inactive:
-            if table_status == 'inactive':
-                continue
+            #if self.get_table_var('hapinsp_table_status', 'active') != 'active':
+            #    continue
 
             #------  regular checks (rules or profiles) can now run  -----------------------------
             for check in sorted([ x for x in self.registry.registry[table]
@@ -214,12 +217,16 @@ class CheckRunner(object):
         # drop out if inactive:
         if reg_check['check_status'] == 'inactive':
             stop_iso8601ext = datetime.datetime.utcnow()
-            self.results.add(table, setup_check,
+            try:
+                self.results.add(table, setup_check,
                              check_status=reg_check['check_status'],
                              check_mode='full', check_unit='rows',
                              check_type='setup', check_policy_type='quality', setup_vars='',
                              run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
                              data_start_timestamp=None, data_stop_timestamp=None)
+            except ValueError, err:
+                logger.critical('Invalid results from inactive setup_check.  Table: %s, setup_check: %s', table, setup_check)
+                raise
             return
 
         # configure logger:
@@ -235,6 +242,7 @@ class CheckRunner(object):
             self.add_prior_table_var('hapinsp_tablecustom_internal_rc', prior_setup_vars.internal_rc)
             self.add_prior_table_var('hapinsp_table_data_start_ts', prior_setup_vars.data_start_ts)
             self.add_prior_table_var('hapinsp_table_data_stop_ts', prior_setup_vars.data_stop_ts)
+            self.add_prior_table_var('hapinsp_table_status', prior_setup_vars.table_status)
 
         # add envvars specific to this check from the registry
         for key, val in reg_check.items():
@@ -267,13 +275,16 @@ class CheckRunner(object):
             self.add_table_var('hapinsp_table_mode', self.setup_vars.table_mode)
             self.add_table_var('hapinsp_table_data_start_ts', self.setup_vars.data_start_ts)
             self.add_table_var('hapinsp_table_data_stop_ts', self.setup_vars.data_stop_ts)
+            self.add_table_var('hapinsp_table_status', self.setup_vars.table_status)
 
         count = None
         stop_iso8601ext = datetime.datetime.utcnow()
         saved_vars = self.setup_vars.tablecustom_vars
-        saved_vars['data_start_ts'] = self.setup_vars.data_start_ts
-        saved_vars['data_stop_ts'] = self.setup_vars.data_stop_ts
-        self.results.add(table, setup_check, count,
+        saved_vars['data_start_ts'] = self.get_table_var('hapinsp_table_data_start_ts', None)
+        saved_vars['data_stop_ts'] = self.get_table_var('hapinsp_table_data_stop_ts', None)
+
+        try:
+            self.results.add(table, setup_check, count,
                           rc, reg_check['check_status'],
                           check_mode=self.setup_vars.table_mode, check_unit='rows',
                           check_scope=-1, check_severity_score=-1,
@@ -281,17 +292,22 @@ class CheckRunner(object):
                           check_type='setup', setup_vars=saved_vars,
                           run_start_timestamp=start_iso8601ext,
                           run_stop_timestamp=stop_iso8601ext,
-                          data_start_timestamp=self.setup_vars.data_start_ts,
-                          data_stop_timestamp=self.setup_vars.data_stop_ts)
+                          data_start_timestamp=self.get_table_var('hapinsp_table_data_start_ts', None),
+                          data_stop_timestamp=self.get_table_var('hapinsp_table_data_stop_ts', None))
+        except ValueError:
+            logger.critical('Invalid results from setup_check.  Table: %s, setup_check: %s, setup_vars: %s',
+                            table, setup_check, self.setup_vars)
+            raise
         self.drop_prior_table_vars()
 
 
     def _run_check(self, table, check, reg_check):
 
         start_iso8601ext = datetime.datetime.utcnow()
-        if reg_check['check_status'] == 'inactive':
+        if reg_check['check_status'] == 'inactive' or self.get_table_var('hapinsp_table_status', None) == 'inactive':
             stop_iso8601ext = datetime.datetime.utcnow()
-            self.results.add(table, check, violations=-1, rc=-1,
+            try:
+                self.results.add(table, check, violations=-1, rc=-1,
                              check_status='inactive',
                              check_type='rule',
                              check_policy_type='quality',
@@ -300,6 +316,9 @@ class CheckRunner(object):
                              check_scope=-1, check_severity_score=-1,
                              run_start_timestamp=start_iso8601ext, run_stop_timestamp=stop_iso8601ext,
                              data_start_timestamp=None, data_stop_timestamp=None)
+            except ValueError:
+                logger.critical('Invalid results from inactive check.  Table: %s, check: %s', table, check)
+                raise
             return
 
         # add envvars specific to this check from the registry
@@ -331,6 +350,7 @@ class CheckRunner(object):
             actual_mode  = None
         else:
             count       = check_vars.violation_cnt
+            check_log   = check_vars.log
             rc          = max(int(check_rc), int(check_vars.internal_rc))
             self.run_logger.debug('table: %s, check: %s, rc: %s, violations: %s, check log: %s', table, check, rc, count, check_vars.log)
 
@@ -341,7 +361,8 @@ class CheckRunner(object):
         else:
             actual_data_start_iso8601 = None
             actual_data_stop_iso8601 = None
-        self.results.add(table, check, count, rc, reg_check['check_status'],
+        try:
+            self.results.add(table, check, count, rc, reg_check['check_status'],
                          check_type='rule', check_policy_type='quality',
                          check_mode=actual_mode, check_unit='rows',
                          check_scope=-1, check_severity_score=-1,
@@ -350,6 +371,11 @@ class CheckRunner(object):
                          run_stop_timestamp=stop_iso8601ext,
                          data_start_timestamp=actual_data_start_iso8601,
                          data_stop_timestamp=actual_data_stop_iso8601)
+        except ValueError:
+            self.both_logger('CRITICAL', 'Invalid results from check.  Table: %s, check: %s, check_vars: %s, check_logs: %s' \
+                % (table, check, self.check_vars, check_log))
+            raise
+        self.drop_prior_table_vars()
 
         # remove any check-specific envvars:
         self.drop_check_vars()
@@ -359,7 +385,7 @@ class CheckRunner(object):
         assert isdir(self.repo.check_dir)
         assert isfile(pjoin(self.repo.check_dir, check_filename))
         check_fqfn = pjoin(self.repo.check_dir, check_filename)
-        process = subprocess.Popen([check_fqfn], stdout=subprocess.PIPE)
+        process = subprocess.Popen([check_fqfn], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         process.wait()
         output = process.stdout.read()
         rc     = process.returncode
@@ -495,6 +521,7 @@ class SetupVars(object):
                 if key == 'rc':
                     self.internal_rc = val
                 elif key == 'table_status' and val:
+                    print('table_status found: %s' % val)  #FIXME - just for debugging
                     self.table_status = val
                 elif key == 'log':
                     self.check_logger.info(val)
